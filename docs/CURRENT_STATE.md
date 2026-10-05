@@ -4,9 +4,65 @@ Fecha: 2026-10-05 (America/Bogota).
 
 ## Tarea ejecutada
 
-T01 — Crear proyecto React + TypeScript + Vite.
+T02 — Instalar dependencias aprobadas.
 
-Estado: T01 CLOSED; ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOSE T01`) y con cierre formal autorizado por el usuario. React + TypeScript + Vite quedaron operativos. Commit de cierre: `chore: complete T01 React TypeScript Vite bootstrap`.
+Estado: T02 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T02`). Cierre formal autorizado por el usuario mediante el commit `chore: complete T02 dependency installation`. T03 no ha comenzado.
+
+## Dependencias instaladas en T02
+
+Entorno: Node.js `v24.21.0` mediante NVM y npm `11.19.0`.
+
+| Dependencia nueva | Categoría | Versión instalada |
+|---|---|---|
+| `react-router-dom` | runtime | 7.18.4 |
+| `leaflet` | runtime | 1.9.4 |
+| `dexie` | runtime | 4.4.6 |
+| `chart.js` | runtime | 4.5.1 |
+| `vitest` | dev | 5.0.3 |
+| `@testing-library/react` | dev | 16.3.3 |
+| `@testing-library/jest-dom` | dev | 7.0.1 |
+| `@types/leaflet` | dev | 1.9.22 |
+| `jsdom` | dev | 30.1.2 |
+
+`@types/leaflet` aporta los tipos de Leaflet. `jsdom` aporta el entorno DOM necesario para futuras pruebas de componentes con Vitest y React Testing Library; su necesidad se justificó antes de instalarlo. No se configura todavía el entorno de testing.
+
+`package.json` incorpora exclusivamente estas cuatro dependencias runtime y cinco dev, con rangos caret. `package-lock.json` registra sus versiones exactas, integridad y dependencias transitivas/peer resueltas por npm. No cambiaron los scripts, engines, rangos previos ni versiones resueltas del stack instalado en T01.
+
+## Verificación de T02
+
+- Instalación runtime: 8 paquetes añadidos, 36 auditados, 0 vulnerabilidades reportadas.
+- Instalación dev: 80 paquetes añadidos, 116 auditados, 0 vulnerabilidades reportadas.
+- `npm ls --depth=0`: PASS, sin dependencias inválidas o faltantes; versiones detalladas en la tabla y stack T01 preservado.
+- `npm run build`: PASS, incluye `tsc -b`; Vite `8.3.2`, 16 módulos transformados, build en 265 ms.
+- `npm run lint`: PASS, salida 0.
+- `./node_modules/.bin/tsc -b --force`: PASS, compilación forzada sin errores.
+- Comprobación de manifiesto/lockfile/paquetes instalados: PASS; solo dependencias directas autorizadas y transitivas gestionadas por npm.
+- `git diff --check`: PASS, sin errores. Solo se modifican `package.json`, `package-lock.json`, este estado y la evidencia documental en `docs/TEST-RESULTS.md`.
+
+La revisión independiente de Valerio aprobó los 16 criterios de T02: dependencias autorizadas y justificadas, coherencia del manifiesto/lockfile/instalación, árboles npm sin errores relevantes, build, lint, TypeScript forzado, ausencia de configuración o lógica prematura y estado documental correcto. No encontró defectos ni bloqueos. El cierre incluye una última validación de build, lint, TypeScript forzado y `git diff --check`, seguida de la comprobación de `git status` y `git log -1 --oneline` después del commit.
+
+Comandos ejecutados para T02:
+
+```sh
+source /home/rodolfo/.nvm/nvm.sh
+nvm use
+node --version
+npm --version
+npm_config_cache=/tmp/walking-tracker-npm-cache npm install react-router-dom leaflet dexie chart.js --fetch-retries=0 --fetch-timeout=15000
+npm_config_cache=/tmp/walking-tracker-npm-cache npm install -D vitest @testing-library/react @testing-library/jest-dom @types/leaflet jsdom --fetch-retries=0 --fetch-timeout=15000
+npm ls --depth=0
+npm run build
+npm run lint
+./node_modules/.bin/tsc -b --force
+git diff --check
+git status --short --branch --untracked-files=all
+```
+
+Hallazgos de T02: los intentos restringidos de instalación fallaron por DNS (`EAI_AGAIN`); los reintentos con permisos autorizados finalizaron correctamente. Sin advertencias de instalación, bloqueos pendientes ni desviaciones de arquitectura. Las dependencias quedan instaladas sin integración: no se configuran Router, Leaflet, Dexie, IndexedDB, Chart.js ni Vitest, no se crean pruebas y no se implementa lógica funcional. Fuentes, configuraciones existentes y los cuatro documentos principales permanecen intactos.
+
+## Historial de T01
+
+T01 ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOSE T01`) y cerrada en el commit `55a9f1b` (`chore: complete T01 React TypeScript Vite bootstrap`). React + TypeScript + Vite quedaron operativos.
 
 ## Base técnica creada en T01
 
@@ -15,7 +71,7 @@ Estado: T01 CLOSED; ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOS
 - Node.js `v24.21.0` y npm `11.19.0`, activados con NVM. `.nvmrc` fija la versión disponible y `package.json` exige Node 24.
 - Pantalla estática mínima con el título Walking Tracker y el texto «Base del proyecto preparada». Se omitieron el contador y los assets de demostración de la plantilla. Sin navegación, tracking, dominio ni persistencia.
 - Scripts revisados: `dev` = `vite`; `build` = `tsc -b && vite build`; `lint` = `oxlint`; `preview` = `vite preview`. Oxlint y los tipos corresponden al tooling de la plantilla base.
-- No se instalaron React Router, Leaflet, Dexie, Chart.js, Vitest ni React Testing Library. T02 no ha comenzado.
+- Durante T01 no se instalaron React Router, Leaflet, Dexie, Chart.js, Vitest ni React Testing Library. Se incorporan posteriormente en T02, según la sección vigente de este documento.
 
 ## Verificación de T01
 
@@ -67,7 +123,7 @@ Al cierre de T00 todavía no existían proyecto React, dependencias ni scripts. 
 
 Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-PLAN.md) y registradas en [TEST-RESULTS.md](TEST-RESULTS.md). Esos resultados corresponden a la entrega previa al commit; la aprobación técnica del usuario queda registrada aquí. No aplica ejecutar pruebas funcionales en T00.
 
-## Hallazgos y bloqueos
+## Hallazgos históricos de T00/T01
 
 - Sin bloqueos pendientes para T01 ni desviaciones de arquitectura.
 - El entorno restringido produjo `EAI_AGAIN` al acceder a npm, `EPERM` al abrir el puerto de Vite y un error de sockets al iniciar Chrome. Los reintentos con permisos autorizados permitieron completar las verificaciones.
@@ -84,4 +140,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
 
-T01 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. T02 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T02 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. Las dependencias runtime y dev aprobadas están instaladas, con build, lint y TypeScript validados. T03 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

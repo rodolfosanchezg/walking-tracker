@@ -38,3 +38,20 @@ Validación del Senior Software Architect contra la decisión explícita del usu
 - PASS: `git diff --check` sin errores; solo cuatro documentos modificados (`REQUIREMENTS.md`, `DECISIONS.md`, `CURRENT_STATE.md`, `TEST-RESULTS.md`).
 
 El soporte offline completo, Service Worker, PWA y gestión de regiones offline quedan para una segunda versión. Proyecto documentalmente listo para T01, sin iniciarla ni introducir código funcional. No se ejecutan pruebas de aplicación en esta tarea documental.
+
+## T02 — Instalar dependencias aprobadas — 2026-10-05
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: `PASS — READY TO CLOSE T02`. Sin defectos identificados; cierre autorizado por el usuario.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Instalación limpia | PASS | Runtime: 8 paquetes añadidos; dev: 80. Auditoría final de 116 paquetes, 0 vulnerabilidades reportadas. |
+| Build correcto | PASS | `npm run build` (`tsc -b && vite build`) termina con salida 0; 16 módulos, 265 ms. |
+| Dependencias aprobadas solamente | PASS | Cuatro runtime autorizadas; Vitest, RTL, jest-dom, tipos Leaflet y jsdom como entorno DOM justificado. Dependencias transitivas gestionadas por npm. |
+| Árbol de dependencias | PASS | `npm ls --depth=0` sin errores; manifiesto, lockfile e instalación coinciden. |
+| TypeScript | PASS | `./node_modules/.bin/tsc -b --force` sin errores. |
+| Lint | PASS | `npm run lint` sin errores. |
+| Alcance e integridad | PASS | Fuentes, configuraciones, scripts y cuatro documentos principales intactos. No se configura testing ni se crean pruebas; T03 sin comenzar. |
+| Whitespace | PASS | `git diff --check` sin errores. |
+
+Node.js `24.21.0` mediante NVM, npm `11.19.0`. Versiones y comandos de instalación documentados en `CURRENT_STATE.md`. Los intentos de descarga restringidos fallaron por DNS; los reintentos autorizados finalizaron correctamente. Sin bloqueos pendientes. Cambios incluidos en el commit de cierre autorizado de T02; T03 no ha comenzado.
