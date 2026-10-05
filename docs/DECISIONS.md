@@ -19,9 +19,10 @@ Su objetivo es dejar trazabilidad de decisiones que afectan cálculos, calidad d
 | D3 | Altitud y ruido | Aprobada |
 | D4 | Estimación de métricas faltantes | Aprobada |
 | D5 | Persistencia durante la caminata | Aprobada |
-| D6 | Mapas offline | Aprobada |
+| D6 | Mapas offline: selección y descarga manual de áreas | Sustituida por D9; antecedente histórico |
 | D7 | Recuperación de sesiones | Aprobada |
 | D8 | Plataforma del MVP: Web HTML + JavaScript | Aprobada |
+| D9 | Mapas en el MVP y soporte offline completo en segunda versión | Aprobada y vigente; sustituye D6 |
 
 ---
 
@@ -283,7 +284,11 @@ Deberán definirse técnicamente:
 
 # D6 — Mapas offline
 
-## Decisión
+## Estado y trazabilidad
+
+Sustituida por D9 el 2026-10-05 por decisión explícita del usuario. Se conserva íntegro el contenido previo a continuación como antecedente histórico; sus obligaciones, alternativas descartadas y parámetros no son vigentes para el MVP ni definen por sí solos la implementación de la segunda versión.
+
+## Decisión anterior (sustituida)
 
 El usuario deberá seleccionar manualmente el área del mapa que desea preparar para uso offline.
 
@@ -449,10 +454,48 @@ Estas alternativas no quedan descartadas para versiones futuras.
 
 `ARCHITECTURE.md` deberá diseñar una solución web sencilla, basada en capacidades estándar del navegador, evitando incorporar infraestructura móvil nativa que ya no sea necesaria.
 
+---
+
+# D9 — Mapas en el MVP y soporte offline completo en segunda versión
+
+## Estado y autoridad
+
+Aprobada y vigente. Registra la decisión arquitectónica más reciente confirmada por el usuario el 2026-10-05. Sustituye D6 y prevalece sobre las referencias anteriores que exigían preparación o descarga manual de mapas en el MVP.
+
+## Decisión
+
+- El MVP será una web React + TypeScript + Vite y utilizará Leaflet con tiles raster.
+- No habrá selección manual, preparación ni descarga explícita de áreas offline en el MVP.
+- Sin Internet, el MVP solo podrá aprovechar la caché ya disponible en el navegador cuando exista; no garantizará disponibilidad, cobertura ni permanencia del fondo cartográfico.
+- El tracking GPS permanecerá independiente de la carga de tiles y de la disponibilidad del mapa, sujeto a las condiciones de visibilidad y permisos ya aprobadas.
+- El soporte offline completo, incluida preparación o descarga controlada de mapas, Service Worker, PWA, caché controlada, precarga de tiles y gestión de regiones offline, se traslada a una segunda versión.
+
+## Contexto
+
+La decisión D6 y las referencias anteriores de `REQUIREMENTS.md` exigían mapas preparados manualmente para uso offline, mientras que `ARCHITECTURE.md` §16.4 y §26 R5 ya excluyen el soporte offline completo del MVP y mantienen el tracking independiente del mapa. El usuario confirmó que la decisión arquitectónica más reciente prevalece.
+
+## Ventajas
+
+- Mantiene el MVP dentro de la arquitectura aprobada.
+- Evita que la falta de fondo cartográfico detenga el registro GPS.
+- Aplaza la complejidad de descargas y gestión offline a la segunda versión.
+
+## Limitaciones y riesgo aceptado
+
+El fondo cartográfico puede quedar parcial o totalmente indisponible sin Internet. La caché existente del navegador no constituye soporte offline completo ni garantiza disponibilidad de mapas.
+
+## Alternativa sustituida
+
+La selección manual de áreas, límites de descarga y reintentos automáticos definidos en D6 dejan de ser obligaciones del MVP. Los parámetros del soporte offline completo se definirán al abordar la segunda versión; no se fijan nuevos valores ni políticas en esta corrección.
+
+## Impacto documental
+
+Se actualizan RQ-OFFLINE-002/003/004, RQ-ERROR-002, el alcance inicial, las exclusiones, FUT-021, ASM-005 y la revisión de alcance de `REQUIREMENTS.md`. RQ-OFFLINE-001 y RQ-OFFLINE-005 siguen vigentes. `ARCHITECTURE.md` ya es compatible con D9 y permanece intacto, al igual que `IMPLEMENTATION-PLAN.md`.
+
 
 ## 10. Parámetros técnicos aún pendientes
 
-Las decisiones D1–D7 están aprobadas.
+Las decisiones D1–D5, D7, D8 y D9 están aprobadas y vigentes. D6 queda sustituida por D9.
 
 Antes de finalizar `ARCHITECTURE.md` deberán concretarse, como mínimo:
 
@@ -462,15 +505,19 @@ Antes de finalizar `ARCHITECTURE.md` deberán concretarse, como mínimo:
 4. método de interpolación y estimación;
 5. tratamiento de incertidumbre en pérdidas prolongadas;
 6. intervalo y tamaño de bloque de persistencia;
-7. pérdida máxima tolerable de datos;
-8. límite de tamaño de mapas offline;
-9. política de reintentos de descargas offline.
+7. pérdida máxima tolerable de datos.
+
+El límite de tamaño de mapas offline y la política de reintentos de descargas offline, antes listados como pendientes del MVP, quedan trasladados a la segunda versión. No bloquean el MVP ni T01.
 
 Estos puntos son parámetros derivados de decisiones ya aprobadas y no modifican el alcance funcional salvo que una limitación técnica obligue a revisarlos.
 
 ---
 
 ## 11. Control de cambios
+
+### Cambio aprobado — 2026-10-05
+
+El usuario confirmó la sustitución de D6 por D9 para alinear requisitos y decisiones con la arquitectura aprobada. D6 se conserva como antecedente histórico; la decisión vigente elimina la preparación manual de áreas del MVP y traslada el soporte offline completo a la segunda versión. No se modifica la arquitectura ni el plan de implementación.
 
 Las decisiones aprobadas en este documento no deberán modificarse silenciosamente.
 
@@ -490,4 +537,4 @@ Con `REQUIREMENTS.md` y `DECISIONS.md` consolidados, el siguiente documento a de
 
 `docs/ARCHITECTURE.md`
 
-La arquitectura deberá respetar las decisiones D1–D7 y definir la solución más simple que satisfaga los requisitos aprobados.
+La arquitectura deberá respetar las decisiones vigentes D1–D5, D7, D8 y D9 y definir la solución más simple que satisfaga los requisitos aprobados. D6 se conserva únicamente como antecedente sustituido.

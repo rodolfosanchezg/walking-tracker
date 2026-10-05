@@ -15,7 +15,7 @@ Estado: T00 CLOSED; aprobada técnicamente por el usuario el 2026-10-05. Cierre 
 - Se completaron los documentos de seguimiento, README e instrucciones para agentes que estaban vacíos.
 - Se amplió `.gitignore` para dependencias, builds, cachés, cobertura, logs, configuración local y archivos del editor/sistema. Las plantillas `.env.example` pueden versionarse.
 - Se añadieron `src/.gitkeep` y `tests/.gitkeep` para conservar ambas carpetas en Git.
-- Los cuatro documentos principales permanecen intactos; se verifica igualdad con HEAD y hashes SHA-256 antes/después.
+- Durante T00, los cuatro documentos principales se conservaron intactos. En la corrección documental posterior se modifican únicamente `REQUIREMENTS.md` y `DECISIONS.md`; `ARCHITECTURE.md` e `IMPLEMENTATION-PLAN.md` permanecen intactos.
 - Git ya estaba inicializado en la rama `master`, con HEAD `90e71ad`. El estado inicial era limpio.
 - Los cambios aprobados de T00 se incluyen en el commit de cierre. La verificación posterior al commit comprende `git status` y `git log -1 --oneline` para confirmar el repositorio limpio y el último commit.
 
@@ -27,14 +27,15 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Hallazgos y bloqueos
 
-- Sin bloqueos para cerrar T00.
-- Inconsistencia documental detectada sobre mapas offline: `REQUIREMENTS.md` RQ-OFFLINE-002/003 y `DECISIONS.md` D6 contemplan preparación manual de mapas offline; `ARCHITECTURE.md` §16.4 excluye esa capacidad del MVP.
+- Sin bloqueos documentales para iniciar T01 respecto a mapas offline.
+- Inconsistencia documental sobre mapas offline resuelta el 2026-10-05 por el Senior Software Architect, conforme a la decisión aprobada por el usuario.
 - La decisión arquitectónica más reciente aprobada establece que el soporte offline completo queda fuera del MVP inicial y se traslada a una segunda versión.
-- La corrección de los documentos fuente será realizada antes de T01. En este cierre se mantienen intactos `REQUIREMENTS.md`, `DECISIONS.md`, `ARCHITECTURE.md` e `IMPLEMENTATION-PLAN.md`.
+- Se actualizaron `docs/REQUIREMENTS.md` y `docs/DECISIONS.md`, además de este estado y la evidencia en `docs/TEST-RESULTS.md`. D6 permanece como antecedente sustituido por D9, ahora vigente. El MVP solo podrá aprovechar caché ya disponible en el navegador cuando exista, sin garantía de disponibilidad del mapa y manteniendo el tracking GPS independiente de los tiles.
+- `REQUIREMENTS.md`, `DECISIONS.md` y `ARCHITECTURE.md` son coherentes respecto a mapas offline. No fue necesario modificar la arquitectura; `IMPLEMENTATION-PLAN.md` tampoco se modificó. La corrección documental previa a T01 queda completada.
 - Los parámetros técnicos pendientes en los documentos principales siguen sin resolverse; deberán cerrarse antes de las tareas que dependan de ellos.
 
 ## Handoff
 
-Siguiente responsable: Senior Software Architect / usuario para corregir los documentos fuente antes de T01.
+Siguiente responsable: Senior Developer, una vez autorizada T01 por el usuario.
 
-T00 aprobada técnicamente y cerrada mediante commit. T01 no se inicia en este cierre; requiere la corrección documental previa y autorización para continuar. Sin cambios de base de datos ni dependencias.
+T00 aprobada técnicamente y cerrada mediante commit `82fec4c`. El proyecto queda documentalmente listo para iniciar T01. Esta tarea fue exclusivamente documental: T01 no ha comenzado, no se implementó código funcional ni se instalaron dependencias. Los cambios documentales quedan pendientes de commit; su preparación no autoriza iniciar T01.

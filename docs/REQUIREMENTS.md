@@ -29,6 +29,8 @@ El MVP web deberá:
 
 El MVP no garantizará tracking GPS mientras el navegador esté en segundo plano o la pantalla esté bloqueada.
 
+El tracking GPS será independiente de la disponibilidad del mapa. El MVP no garantizará disponibilidad del fondo cartográfico sin Internet y solo podrá aprovechar la caché ya disponible en el navegador cuando exista. El soporte offline completo se traslada a una segunda versión.
+
 ---
 
 ## 3. Usuario objetivo
@@ -201,23 +203,27 @@ El usuario deberá poder alternar entre la visualización del mapa y el perfil d
 
 ## 9. Funcionamiento offline y mapas
 
+Alcance actualizado el 2026-10-05 según la decisión aprobada D9 de `DECISIONS.md`, que sustituye D6. Se conservan los identificadores RQ-OFFLINE-002/003/004, con su contenido ajustado al MVP vigente.
+
 ### RQ-OFFLINE-001
 Una caminata ya iniciada deberá continuar registrándose aunque se pierda la conexión a Internet.
 
+El registro GPS no deberá depender de la carga de tiles ni de la disponibilidad del fondo cartográfico, sujeto a las condiciones de visibilidad y permisos del navegador.
+
 ### RQ-OFFLINE-002
-El mapa deberá seguir siendo visible sin conexión a Internet dentro de un área que haya sido preparada o descargada previamente.
+El MVP no garantizará disponibilidad del fondo cartográfico sin conexión a Internet. Solo podrá aprovechar la caché ya disponible en el navegador cuando exista, sin garantizar cobertura ni permanencia de los tiles.
 
 ### RQ-OFFLINE-003
-Antes de una caminata, el usuario deberá poder preparar o descargar el área del mapa que desea utilizar offline.
+El MVP no incluirá selección manual, preparación ni descarga explícita de áreas del mapa para uso offline. El soporte offline completo queda fuera del alcance inicial y se traslada a una segunda versión (FUT-021).
 
 ### RQ-OFFLINE-004
-Si durante una caminata el usuario sale del área de mapa disponible offline y no existe conexión a Internet, la aplicación deberá:
+Si durante una caminata el fondo cartográfico deja de estar disponible por falta de conexión y de tiles en la caché del navegador, la aplicación deberá:
 
 1. mostrar una advertencia;
 2. continuar registrando la caminata;
 3. continuar mostrando la posición actual;
 4. continuar mostrando la ruta registrada;
-5. permitir que el fondo cartográfico deje de estar disponible fuera del área preparada.
+5. permitir que el fondo cartográfico no esté disponible sin detener el tracking GPS.
 
 ### RQ-OFFLINE-005
 No será requisito de la primera versión poder iniciar una caminata completamente sin conexión a Internet desde el primer momento.
@@ -479,7 +485,7 @@ Como mínimo, deberán contemplarse mensajes para:
 - precisión GPS insuficiente;
 - pérdida temporal de señal;
 - falta de almacenamiento suficiente;
-- salida del área de mapa disponible offline.
+- fondo cartográfico no disponible por falta de conexión y de tiles en la caché del navegador.
 
 ### RQ-ERROR-003
 Los mensajes de error no deberán provocar pérdida de los datos ya registrados.
@@ -565,7 +571,9 @@ Los siguientes elementos no forman parte del alcance inicial:
 - indicador global de calidad GPS;
 - detección automática de inactividad;
 - sugerencia automática de pausa;
-- gestión avanzada de mapas offline;
+- soporte offline completo de mapas, incluida preparación o descarga controlada de áreas;
+- Service Worker y PWA;
+- caché controlada, precarga de tiles y gestión de regiones offline;
 - reutilización administrada de áreas offline;
 - eliminación manual de mapas offline;
 - consulta del espacio ocupado por mapas offline.
@@ -641,7 +649,7 @@ Detección automática de inactividad.
 Sugerencia automática de pausa.
 
 ### FUT-021
-Gestión avanzada de mapas offline, incluyendo reutilización, eliminación y consulta de espacio ocupado.
+Soporte offline completo de mapas en una segunda versión: preparación o descarga controlada de áreas, Service Worker, PWA, caché controlada, precarga de tiles y gestión de regiones offline, incluyendo reutilización, eliminación y consulta de espacio ocupado. No forma parte del MVP inicial.
 
 ---
 
@@ -660,7 +668,7 @@ Las caminatas típicas se realizarán principalmente en exteriores.
 El almacenamiento inicial de datos será local al dispositivo.
 
 ### ASM-005
-La preparación inicial de mapas offline podrá realizarse con conectividad disponible.
+Puede existir caché de tiles en el navegador, pero su disponibilidad, cobertura y permanencia no se presuponen ni se garantizan. Este supuesto sustituye el anterior sobre preparación inicial de mapas offline, trasladada a la segunda versión según D9.
 
 ---
 
@@ -701,7 +709,9 @@ El alcance fue ajustado para priorizar una implementación web HTML + JavaScript
 4. se intentará mantener la pantalla encendida mediante Screen Wake Lock cuando el navegador lo permita;
 5. la aplicación deberá advertir cuando exista riesgo de haber perdido posiciones por cambios de visibilidad;
 6. la persistencia local permitirá recuperar hasta el último bloque guardado después de una recarga, cierre o interrupción, siempre que el navegador conserve el almacenamiento;
-7. las capacidades nativas de background tracking quedan fuera del MVP web y podrán reevaluarse en una futura aplicación móvil nativa o híbrida.
+7. las capacidades nativas de background tracking quedan fuera del MVP web y podrán reevaluarse en una futura aplicación móvil nativa o híbrida;
+8. el tracking GPS será independiente del fondo cartográfico; sin Internet solo podrá aprovecharse la caché ya disponible en el navegador, sin garantía de disponibilidad del mapa;
+9. no habrá descarga manual de áreas en el MVP; el soporte offline completo, Service Worker, PWA y gestión de regiones offline se trasladan a una segunda versión conforme a D9.
 
 ### Parámetros técnicos pendientes
 
