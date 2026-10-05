@@ -4,7 +4,7 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00 — Crear estructura documental y base del repositorio ejecutada el 2026-10-05 y pendiente de revisión. La aplicación todavía no está creada: no hay dependencias, scripts npm ni lógica funcional. T01 no ha comenzado.
+T00 — Crear estructura documental y base del repositorio aprobada técnicamente y cerrada el 2026-10-05. La aplicación todavía no está creada: no hay dependencias, scripts npm ni lógica funcional. T01 no ha comenzado.
 
 ## Estructura inicial
 

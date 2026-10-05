@@ -38,4 +38,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: Senior Developer, una vez autorizada T01 por el usuario.
 
-T00 aprobada técnicamente y cerrada mediante commit `82fec4c`. El proyecto queda documentalmente listo para iniciar T01. Esta tarea fue exclusivamente documental: T01 no ha comenzado, no se implementó código funcional ni se instalaron dependencias. Los cambios documentales quedan pendientes de commit; su preparación no autoriza iniciar T01.
+T00 aprobada técnicamente y cerrada mediante commit `82fec4c`. El proyecto queda documentalmente listo para iniciar T01. Esta tarea fue exclusivamente documental: T01 no ha comenzado, no se implementó código funcional ni se instalaron dependencias. La corrección documental sobre mapas offline quedó consolidada en el commit `a2e2925`. Esto no autoriza iniciar T01.

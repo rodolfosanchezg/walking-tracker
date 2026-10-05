@@ -31,4 +31,4 @@ Respetar React + TypeScript + Vite y el MVP sin backend. Separar UI, dominio, se
 
 ## Estado de preparación
 
-T00 está ejecutada y pendiente de revisión. El bootstrap React, la instalación de dependencias y la lógica funcional pertenecen a tareas posteriores y requieren autorización.
+T00 está aprobada técnicamente y cerrada. La corrección documental sobre mapas offline está completada. T01 no ha comenzado y requiere autorización explícita del usuario. El bootstrap React, la instalación de dependencias y la lógica funcional pertenecen a tareas posteriores y requieren autorización.
