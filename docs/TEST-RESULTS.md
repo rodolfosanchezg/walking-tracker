@@ -55,3 +55,20 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 | Whitespace | PASS | `git diff --check` sin errores. |
 
 Node.js `24.21.0` mediante NVM, npm `11.19.0`. Versiones y comandos de instalación documentados en `CURRENT_STATE.md`. Los intentos de descarga restringidos fallaron por DNS; los reintentos autorizados finalizaron correctamente. Sin bloqueos pendientes. Cambios incluidos en el commit de cierre autorizado de T02; T03 no ha comenzado.
+
+## T03 — Configurar testing — 2026-10-05
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: `PASS — READY TO CLOSE T03`. Los 18 criterios revisados pasaron, sin defectos. Cierre autorizado por el usuario.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Ejecución de pruebas | PASS | `npm test` ejecuta `vitest run`; 2 archivos y 2 pruebas aprobados en 1.69 s. |
+| Prueba mínima de componente | PASS | App renderizado con RTL en jsdom; encabezado comprobado con `toBeInTheDocument`. |
+| Prueba mínima de función TypeScript | PASS | Fixture sum en tests/helpers, evaluada en Node; sin lógica funcional de Walking Tracker. |
+| Build | PASS | `npm run build`, salida 0; 16 módulos, 238 ms. |
+| Lint | PASS | `npm run lint`, salida 0. |
+| TypeScript | PASS | `tsc -b --force` sin errores; incluye pruebas, setup y configuración Vitest. |
+| Integridad | PASS | Fuentes de aplicación, lockfile y documentos principales intactos. Sin dependencias nuevas ni inicio de T04. |
+| Whitespace | PASS | `git diff --check` sin errores. |
+
+Pruebas mínimas del bootstrap exclusivamente; no se ejecutan pruebas de tracking, GPS, métricas o persistencia. Sin bloqueos ni desviaciones. Cambios incluidos en el commit autorizado de cierre de T03; T04 no ha comenzado.

@@ -27,8 +27,9 @@ Respetar React + TypeScript + Vite y el MVP sin backend. Separar UI, dominio, se
 - Revisar el estado Git inicial y preservar cambios existentes del usuario.
 - Ejecutar verificaciones apropiadas para la tarea; no presentar pruebas no ejecutadas como aprobadas.
 - Actualizar `docs/CURRENT_STATE.md` y registrar validaciones en `docs/TEST-RESULTS.md`.
+- En cada cierre de tarea TXX, actualizar `README.md` para mantenerlo alineado con el estado real del proyecto, las tareas completadas, la siguiente tarea pendiente y las limitaciones vigentes. Regla permanente aprobada por el usuario desde el cierre de T03.
 - Entregar archivos creados/modificados, criterios de aceptación, resultados y hallazgos o bloqueos.
 
 ## Estado de preparación
 
-T00 está aprobada técnicamente y cerrada. La corrección documental sobre mapas offline está completada. T01 no ha comenzado y requiere autorización explícita del usuario. El bootstrap React, la instalación de dependencias y la lógica funcional pertenecen a tareas posteriores y requieren autorización.
+T00, T01, T02 y T03 están aprobadas y cerradas. La base React + TypeScript + Vite, las dependencias aprobadas y el entorno Vitest/RTL están operativos. La corrección documental sobre mapas offline está completada. T04 no ha comenzado y requiere autorización explícita del usuario. Implementar estructura adicional, integraciones o lógica funcional solo dentro de una tarea autorizada.

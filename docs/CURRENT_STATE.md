@@ -4,9 +4,54 @@ Fecha: 2026-10-05 (America/Bogota).
 
 ## Tarea ejecutada
 
-T02 — Instalar dependencias aprobadas.
+T03 — Configurar testing con Vitest y React Testing Library.
 
-Estado: T02 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T02`). Cierre formal autorizado por el usuario mediante el commit `chore: complete T02 dependency installation`. T03 no ha comenzado.
+Estado: T03 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T03`). Cierre formal autorizado por el usuario mediante el commit `test: complete T03 testing setup`. T04 no ha comenzado.
+
+## Configuración y verificación de T03
+
+- `vitest.config.ts` extiende Vite mediante `mergeConfig`, conservando el plugin React. Usa jsdom, `tests/setup.ts` y descubrimiento de `tests/**/*.test.{ts,tsx}`.
+- `tests/setup.ts` importa `@testing-library/jest-dom/vitest` y registra cleanup de RTL después de cada prueba. Las APIs de Vitest se importan explícitamente, sin globals.
+- Script npm `test`: `vitest run`, ejecución única con código de salida. Scripts existentes preservados.
+- `tsconfig.app.json` incluye `tests` además de `src`; `tsconfig.node.json` incluye `vitest.config.ts`. Build y compilación forzada verifican también pruebas, setup y configuración.
+- `tests/sum.test.ts`: una prueba mínima de función TypeScript en entorno Node. La función sum está aislada como fixture en `tests/helpers/sum.ts`, sin lógica del producto en `src/`.
+- `tests/App.test.tsx`: una prueba mínima del App existente; verifica con RTL y `toBeInTheDocument` que se renderiza el encabezado Walking Tracker en jsdom.
+- Sin dependencias adicionales. Se reutilizan Vitest `5.0.3`, RTL `16.3.3`, jest-dom `7.0.1` y jsdom `30.1.2`. Lockfile intacto.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Script ejecuta pruebas | PASS | `npm test` ejecuta Vitest run y termina con salida 0. |
+| Prueba mínima de componente | PASS | App renderizado con RTL en jsdom; matcher jest-dom operativo. |
+| Prueba mínima de función TypeScript / dominio | PASS | Fixture sum(2, 3) devuelve 5 en Node; sin dominio funcional del producto. |
+| Pruebas | PASS | 2 archivos y 2 pruebas aprobados en 1.69 s. |
+| Build | PASS | `npm run build`, 16 módulos, build Vite en 238 ms. |
+| Lint | PASS | `npm run lint`, salida 0. |
+| TypeScript | PASS | `tsc -b --force` sin errores, incluyendo tests/setup/configuración. |
+| Whitespace | PASS | `git diff --check` sin errores. |
+
+Comandos ejecutados bajo Node `24.21.0` y npm `11.19.0`:
+
+```sh
+source ~/.nvm/nvm.sh
+nvm use
+./node_modules/.bin/vitest --help
+npm test
+npm run build
+npm run lint
+./node_modules/.bin/tsc -b --force
+git diff --check
+git status --short --branch --untracked-files=all
+```
+
+Hallazgos de T03: sin bloqueos ni desviaciones arquitectónicas. Pruebas exclusivamente del bootstrap, sin tracking, GPS, métricas o persistencia. Fuentes de aplicación, documentos principales y configuración Vite original intactos. Sin integraciones Router, Leaflet, Dexie o Chart.js ni estructura de aplicación T04.
+
+Valerio aprobó independientemente los 18 criterios de T03, incluyendo configuración Vitest/RTL/jest-dom, jsdom, las dos pruebas mínimas, build, lint y compilación TypeScript forzada. Sin defectos identificados. El cierre incluye la última ejecución de tests, build, lint, TypeScript forzado y `git diff --check`, seguida de commit autorizado y comprobación de estado Git.
+
+README actualizado con stack operativo, dependencias instaladas, testing disponible, comandos de desarrollo/validación, T00–T03 completadas, T04 pendiente y limitaciones del MVP. AGENTS refleja el estado actual y registra la regla permanente aprobada: actualizar README en cada cierre de tarea TXX.
+
+## Historial de T02
+
+T02 ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOSE T02`) y cerrada en `ae869d0` (`chore: complete T02 dependency installation`). Durante T02 solo se instalaron dependencias; la configuración de testing se incorpora en T03.
 
 ## Dependencias instaladas en T02
 
@@ -24,7 +69,7 @@ Entorno: Node.js `v24.21.0` mediante NVM y npm `11.19.0`.
 | `@types/leaflet` | dev | 1.9.22 |
 | `jsdom` | dev | 30.1.2 |
 
-`@types/leaflet` aporta los tipos de Leaflet. `jsdom` aporta el entorno DOM necesario para futuras pruebas de componentes con Vitest y React Testing Library; su necesidad se justificó antes de instalarlo. No se configura todavía el entorno de testing.
+`@types/leaflet` aporta los tipos de Leaflet. `jsdom` aporta el entorno DOM necesario para pruebas de componentes con Vitest y React Testing Library; su necesidad se justificó antes de instalarlo. Durante T02 no se configuró el entorno de testing.
 
 `package.json` incorpora exclusivamente estas cuatro dependencias runtime y cinco dev, con rangos caret. `package-lock.json` registra sus versiones exactas, integridad y dependencias transitivas/peer resueltas por npm. No cambiaron los scripts, engines, rangos previos ni versiones resueltas del stack instalado en T01.
 
@@ -140,4 +185,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
 
-T02 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. Las dependencias runtime y dev aprobadas están instaladas, con build, lint y TypeScript validados. T03 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T03 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. Vitest, RTL y jest-dom operativos, dos pruebas mínimas aprobadas y build/lint/TypeScript validados. T04 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
