@@ -276,3 +276,22 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Primera ejecución: tres fallos por aserción con paréntesis incorrecto; corregido y suite completa PASS. Sin dependencias nuevas ni bloqueos. Umbrales requieren calibración real; correlación entre salto y velocidad documentada. Sin altitud, rutas filtradas, tracking, UI o persistencia. T15 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
 
 Validación final de cierre de T14: npm test -- --run PASS (164 pruebas, 13 archivos, 4.62 s); npm run build PASS (30 módulos, 330 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificó src/domain/elevation: solo .gitkeep, sin implementación de T15.
+
+## T15 — Procesamiento de altitud — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T15. Sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Preparación / política GPS | PASS | Metros, valores finitos/negativos, exclusiones explícitas; sin alterar quality ni altitud original. |
+| Ruido / anomalías verticales | PASS | Banda muerta 3 m; pico aislado corroborado por dos vecinos excluido. |
+| Interpolación | PASS | Lineal acotada entre referencias, marca estimated, sin extrapolar extremos o cruzar exclusiones. |
+| Ganancia/pérdida / perfil | PASS | Serie tratada; deltas positivos/negativos sin cruzar huecos; distancia T12 y metadatos derivados. |
+| Tests | PASS | 193 pruebas, 14 archivos, 4.90 s; 29 nuevas y 164 previas. |
+| Build | PASS | 30 módulos, 338 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; T12/T13/T14/modelos/UI/README/documentos fuente intactos. |
+
+Primera suite (191 pruebas) PASS; build detectó errores de tipado en referencia de suavizado y fixtures. Corregidos; suite ampliada y build PASS. Sin dependencias nuevas ni bloqueos. Políticas, umbrales, subtotales y límites del detector/interpolación documentados en CURRENT_STATE. Sin Chart.js, UI, persistencia o tracking. T16 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
+
+Validación final de cierre de T15: npm test -- --run PASS (193 pruebas, 14 archivos, 5.09 s); npm run build PASS (30 módulos, 330 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificaron tracking/App/hooks/providers: solo página placeholder y marcadores existentes, sin lógica de estado de sesión T16.

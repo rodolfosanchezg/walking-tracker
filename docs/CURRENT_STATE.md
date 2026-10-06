@@ -4,9 +4,80 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T14 — Calidad GPS y detección de anomalías.
+T15 — Implementar procesamiento de altitud.
 
-Estado: T14 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T14). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T14 GPS quality classification. T15 no ha comenzado.
+Estado: T15 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T15). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T15 altitude processing. T16 no ha comenzado.
+
+## Procesamiento de altitud implementado en T15
+
+src/domain/elevation/elevation.ts implementa funciones puras en metros. Reutiliza distancia acumulada/Haversine T12, sin modificar T12/T13, modelos ni clasificación T14. Sin React, browser, Chart.js, Dexie, repositories, persistencia, UI o tracking.
+
+API pública:
+
+- ElevationConfig / DEFAULT_ELEVATION_CONFIG: parámetros centralizados ajustables.
+- prepareElevationSeries(points, config?): ElevationSample[]. Normaliza altitud disponible/no disponible, aplica política GPS y detecta picos verticales aislados; conserva un sample por punto y su orden.
+- interpolateElevationGaps(samples, config?): ElevationSample[]. Interpolación conservadora de huecos disponibles para tratar.
+- smoothElevationSeries(samples, config?): ElevationSample[]. Banda muerta respecto al último valor aceptado.
+- calculateElevationChange(processedSamples): { gainMeters, lossMeters, estimated }. Sobre la serie ya tratada: suma deltas positivos para ganancia y magnitud de deltas negativos para pérdida; huecos y cambios de walkId cortan continuidad.
+- buildElevationProfile(points, config?): ElevationSample[]. Compone preparación, interpolación y suavizado para el gráfico futuro.
+
+ElevationSample: pointId, walkId, timestamp originales, distanceMeters acumulada, altitudeMeters procesada o null, source (measured/interpolated/unavailable/excluded/altitude-anomaly), estimated y smoothed. Serie derivada independiente: no modifica altitude ni quality de TrackPoint. No persiste ni adapta automáticamente las evaluaciones separadas de T14; consume la clasificación presente en los puntos recibidos.
+
+Política por calidad GPS:
+
+- valid: altitud finita y coordenadas seguras utilizables.
+- suspicious: utilizable con cautela conforme D2; mismo control de valores no finitos y picos corroborados, sin reclasificar GPS.
+- low-quality: conservado como hueco excluded, sin participar en elevación ni interpolar a través; evaluación posterior pendiente.
+- anomalous: excluido, corta métricas; altitud original conservada.
+- estimated de entrada: excluido por ahora para no mezclar una estimación de método desconocido. Las interpolaciones creadas en T15 sí participan y se marcan estimated; no generan TrackPoints estimated.
+
+Altitud null/no finita de un punto GPS elegible produce unavailable. Altitud negativa finita es válida. Coordenadas inseguras producen excluded y no generan distancias no finitas.
+
+Parámetros iniciales:
+
+| Parámetro | Valor | Motivo |
+|---|---|---|
+| minimumChangeMeters | 3 m | Suprimir oscilaciones pequeñas; diferencia inferior al umbral mantiene el último valor aceptado, igualdad sí se acepta. Ascenso lento acumulado cruza el umbral sin perder todos los incrementos. |
+| isolatedSpikeMeters | 30 m | Pico/vaguada aislado debe diferir al menos 30 m de ambos vecinos, que entre sí difieren menos de 3 m; no elimina un ascenso sostenido. |
+| maximumInterpolationPoints | 5 | Limitar cantidad de faltantes consecutivos. |
+| maximumInterpolationDistanceMeters | 100 m | Exigir referencias cercanas por distancia horizontal acumulada. |
+| maximumInterpolationIntervalMs | 60000 ms | Exigir cercanía temporal; sin extrapolar pérdidas prolongadas. |
+
+Los límites de interpolación son inclusivos. Parámetros no finitos/no positivos, cantidad no entera o umbral de pico menor/igual al suavizado producen RangeError por configuración inválida. Son valores iniciales ajustables, sujetos a calibración real.
+
+Interpolación: solo huecos unavailable entre referencias finitas de la misma caminata, sin saltar excluded/altitude-anomaly. Requiere timestamps finitos/no negativos/no decrecientes y límites de cantidad/distancia/tiempo. Se interpola linealmente respecto a distancia; si distancia de todo el tramo es cero, se usa posición relativa en la secuencia. Extremos y huecos sin base suficiente quedan null. No se inventan alturas por extrapolación.
+
+Suavizado: banda muerta respecto a último valor aceptado, con reinicio en huecos o cambio de caminata; no altera la altitud original. La salida informa smoothed si cambia el valor y propaga procedencia estimated cuando usa un valor interpolado previo. Ganancia/pérdida excluyen toda transición a través de null o entre caminatas. estimated de las métricas es true cuando un delta no nulo usa valores derivados estimados. Vacío/un punto/sin segmentos dan 0/0 (subtotal disponible); un desbordamiento numérico produce null/null, no Infinity.
+
+Perfil: distanceMeters reutiliza segmentos consecutivos de T12, respetando exclusiones y sin interpolar distancia. La serie puede contener nulls y distancias repetidas, para que un gráfico futuro identifique huecos. No configura Chart.js.
+
+## Pruebas y verificación de T15
+
+29 pruebas en tests/elevation.test.ts: vacío/un punto, constante, ascenso/descenso/mixto, ruido, fronteras 2.999/3/3.001 m, ascenso lento, uno/varios null, extremos, clasificación GPS, picos corroborados, altitud negativa, coordenadas negativas, perfil/T12, puntos repetidos, NaN/Infinity, límites de interpolación, timestamps inválidos, separación de caminatas, inputs congelados, determinismo, configuración y desbordamiento.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 193 pruebas en 14 archivos, 4.90 s; 164 previas preservadas. |
+| Build | PASS | 30 módulos, 338 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Hallazgo corregido: primeras 191 pruebas PASS, pero build detectó narrowing de referencia opcional y fixtures incompatibles con discriminante TrackPoint; corregidos y suite/build completos PASS. Sin dependencias nuevas, desviaciones ni bloqueos. Vitest mantiene sugerencia informativa de rendimiento jsdom. Se retira .gitkeep de elevation. README actualizado en el cierre formal con T00–T15, elevación, suavizado/interpolación, perfil, testing y T16 pendiente. Documentos fuente intactos. Sin conversiones opcionales a pies, tracking, persistencia, UI, gráficos ni T16.
+
+Limitaciones: suavizado puede omitir cambios reales menores a 3 m; detector de pico aislado puede omitir una cima/vaguada real y no resuelve anomalías de extremos o bloques completos sin corroboración. Ganancia/pérdida son subtotales de tramos disponibles, no una garantía de cobertura completa. Interpolaciones y umbrales requieren validación en iPhone. T16 no ha comenzado.
+
+La revisión independiente de Valerio aprobó T15: procesamiento en metros, suavizado e interpolación conservadora, parámetros y política GPS, exclusión de anomalous, ganancia/pérdida, perfil T12, pureza/no mutación y determinismo. 193 pruebas, build, lint, TypeScript y git diff --check PASS. Sus comprobaciones independientes confirmaron ascenso 20/0 m, descenso 0/20 m, perfil mixto 20/5 m, ruido 0/0 m, interpolación a 110 m y fronteras de 3 m. Sin defectos ni bloqueos.
+
+Validación final de cierre de T15: npm test -- --run PASS (193 pruebas, 14 archivos, 5.09 s); npm run build PASS (30 módulos, 330 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificaron tracking/App/hooks/providers: solo página placeholder y marcadores existentes, sin lógica de estado de sesión T16.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T14
+
+T14 ejecutada, aprobada por QA y cerrada en a589c4f (feat: complete T14 GPS quality classification).
 
 ## Clasificación GPS implementada en T14
 
@@ -727,6 +798,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T15; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T16; Senior Developer únicamente tras esa autorización.
 
-T14 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Clasificación, señales, umbrales, timestamps/speed y pruebas documentados y validados. README actualizado en el cierre formal. T15 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T15 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Altitud, parámetros, suavizado/interpolación, política GPS, ganancia/pérdida y perfil documentados y validados. README actualizado en el cierre formal. T16 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

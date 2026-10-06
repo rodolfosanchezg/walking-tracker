@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T14 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T15 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T15 — Altitud**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Tiempo total/activo, velocidad promedio, ritmo promedio y conversiones están implementados; clasificación GPS y detección de anomalías están implementadas como dominio puro; procesamiento de altitud todavía no implementado; mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T16 — Estado de sesión de caminata**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Tiempo total/activo, velocidad promedio, ritmo promedio y conversiones están implementados; clasificación GPS y detección de anomalías están implementadas como dominio puro; procesamiento de altitud implementado como dominio puro; mapas, gráficos e historial/configuración funcional siguen pendientes.
 
-Estado del repositorio tras T14: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más distancia, tiempo, promedios, conversiones, clasificación GPS y 164 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T15: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más distancia, tiempo, promedios, conversiones, clasificación GPS, elevación y 193 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -30,7 +30,8 @@ Estado del repositorio tras T14: router/layout, cinco páginas base, tipos indep
 - `src/services/wakeLock/`: soporte, solicitud/liberación de bloqueo de pantalla, estado y notificaciones de release.
 - `src/domain/metrics/`: distancia, tiempo total/activo, velocidad/ritmo promedio y conversiones mediante funciones puras.
 - `src/domain/filtering/gpsQuality.ts`: clasificación GPS y señales de anomalía, con umbrales configurables.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones y calidad GPS.
+- `src/domain/elevation/elevation.ts`: preparación, suavizado, interpolación, ganancia/pérdida y perfil distancia-altitud.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones, calidad GPS y elevación.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -71,7 +72,7 @@ src/
 │   │   ├── time.ts
 │   │   ├── averages.ts
 │   │   └── conversions.ts
-│   ├── elevation/
+│   ├── elevation/elevation.ts
 │   ├── filtering/gpsQuality.ts
 │   └── estimation/
 ├── components/
@@ -89,7 +90,7 @@ src/
 └── index.css
 ```
 
-Las 8 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Procesamiento de altitud, estimación, integraciones y migraciones futuras siguen pendientes.
+Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Estado funcional de sesión, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -173,7 +174,19 @@ Combina accuracy, velocidad aparente, salto espacial y coherencia temporal. Trac
 
 DEFAULT_GPS_QUALITY_CONFIG centraliza parámetros iniciales ajustables: accuracy 25 m, velocidad 5 m/s, salto 100 m dentro de 30 s, intervalo mínimo 1 s y al menos dos evidencias para anomalía. Timestamps iguales/invertidos se diagnostican sin dividir; no finitos y speed inválida se manejan sin inventar valores derivados. Los umbrales requieren calibración real y salto/velocidad pueden estar correlacionados.
 
-La clasificación GPS aún no está integrada en un flujo funcional de tracking ni define filtrado definitivo de rutas, persistencia o UI. El procesamiento de altitud de T15 todavía no está implementado.
+La clasificación GPS aún no está integrada en un flujo funcional de tracking ni define filtrado definitivo de rutas, persistencia o UI. El procesamiento de altitud se incorpora en T15 sin modificar las clasificaciones GPS.
+
+## Procesamiento de altitud implementado
+
+src/domain/elevation/elevation.ts expone prepareElevationSeries, interpolateElevationGaps, smoothElevationSeries, calculateElevationChange y buildElevationProfile. Son funciones puras que generan una serie derivada en metros, sin modificar los TrackPoints ni sus clasificaciones GPS.
+
+El suavizado usa una banda muerta de 3 m respecto al último valor aceptado. Picos aislados de al menos 30 m se excluyen cuando dos vecinos corroboran el salto. La interpolación lineal se limita a huecos entre referencias próximas: hasta 5 faltantes, 100 m y 60 s. No extrapola extremos ni cruza puntos excluidos; las interpolaciones se marcan estimated.
+
+Altitudes finitas de puntos valid/suspicious participan. low-quality, anomalous y estimated de entrada quedan excluidos según la política documentada. Ganancia/pérdida suman deltas positivos/negativos de la serie procesada, sin conectar a través de huecos. Los resultados son subtotales de tramos disponibles y pueden contener estimaciones identificadas.
+
+El perfil distancia-altitud reutiliza distancia T12 e incluye pointId, walkId, timestamp, distanceMeters, altitudeMeters, source, estimated y smoothed. Chart.js aún no está integrado al perfil. Los parámetros están centralizados y requieren calibración real; el detector puede confundir un pico real aislado.
+
+Todavía no existe una sesión funcional completa de tracking ni integración de estos módulos con UI/persistencia. T16 permanece pendiente.
 
 ## Modelos TypeScript definidos
 
@@ -229,13 +242,13 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 164 pruebas/comprobaciones en trece archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones y calidad GPS; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 193 pruebas/comprobaciones en catorce archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS y elevación; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
 - Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. El servicio de geolocalización está probado con mocks, sin tracking funcional integrado con UI/persistencia ni flujos de caminatas.
 - Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
-- readonly no congela objetos en runtime; validaciones de dominio adicionales, filtrado definitivo, elevación, estimación y recuperación siguen pendientes de implementación.
+- readonly no congela objetos en runtime; validaciones de dominio adicionales, filtrado definitivo de rutas, estimación de tracking y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.
 - El tracking confiable del MVP requerirá página visible y activa; no se garantiza con pantalla bloqueada ni navegador en segundo plano.
 - El acceso a ubicación requerirá HTTPS y permiso del usuario.
