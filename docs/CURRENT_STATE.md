@@ -4,9 +4,58 @@ Fecha: 2026-10-05 (America/Bogota).
 
 ## Tarea ejecutada
 
-T04 — Crear estructura de carpetas.
+T05 — Configurar navegación.
 
-Estado: T04 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T04`). Cierre formal autorizado por el usuario mediante el commit `chore: complete T04 project structure`. T05 no ha comenzado.
+Estado: T05 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T05`). Cierre formal autorizado por el usuario mediante el commit `feat: complete T05 navigation setup`. T06 no ha comenzado.
+
+## Navegación creada en T05
+
+React Router DOM `7.18.4` integrado en modo declarativo: BrowserRouter en `src/main.tsx`, tabla de rutas y `useRoutes` en `src/app/router.tsx`, layout con NavLink y Outlet en `src/app/App.tsx`.
+
+| Ruta | Vista | Archivo |
+|---|---|---|
+| `/` | Home / Inicio | `src/app/HomePage.tsx` |
+| `/walk` | Active Walk / Caminata activa | `src/features/tracking/ActiveWalkPage.tsx` |
+| `/history` | History / Historial | `src/features/history/HistoryPage.tsx` |
+| `/walk/:walkId` | Walk Detail / Detalle de caminata | `src/features/history/WalkDetailPage.tsx` |
+| `/settings` | Settings / Configuración | `src/features/settings/SettingsPage.tsx` |
+
+- Las cinco vistas solo contienen placeholders. Detalle muestra el parámetro de URL, sin cargar datos. Historial ofrece un enlace explícito de ejemplo para verificar el detalle y este permite volver al historial.
+- App reubicado de `src/App.tsx` a `src/app/App.tsx` para alinearse con la ubicación arquitectónica e integrar el layout. Se actualizaron entrada e import de la prueba; sin copias ni alias nuevos.
+- CSS móvil simple: navegación de dos columnas en móvil, cuatro en pantallas mayores, enlaces principales de al menos 44 px, indicador de ruta activa y foco visible.
+- Se retiraron los marcadores de `features/tracking`, `features/history` y `features/settings`, ahora con páginas. Los demás marcadores permanecen.
+- `tests/App.test.tsx` conserva la comprobación de encabezado dentro de MemoryRouter. `tests/navigation.test.tsx` añade cinco casos de carga directa y un flujo de clics entre vistas, detalle, retorno al historial e inicio. La prueba sum sigue intacta.
+- Sin dependencias nuevas ni cambios de lockfile/configuraciones de tooling. Sin tracking, mapas, gráficos, Dexie, IndexedDB, modelos, historial/configuración funcional ni métricas. README y el estado de AGENTS se actualizan en el cierre autorizado para reflejar T00–T05 completadas, navegación placeholder y T06 pendiente.
+
+## Verificación de T05
+
+Entorno: Node.js `24.21.0` mediante NVM, npm `11.19.0`.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Todas las rutas cargan | PASS | Cinco casos en RTL y acceso directo en Chrome headless. |
+| Navegación básica | PASS | Clics entre vistas y retorno; Chrome confirma conservación del documento SPA y botón Atrás. |
+| Detalle dinámico | PASS | Identificadores walk-123, mobile-123 y example renderizados según la URL. |
+| Consola | PASS | Chrome sin errores ni advertencias en las cinco rutas y navegación. |
+| Layout móvil | PASS | A 320 × 740 px, sin overflow horizontal; enlaces principales de al menos 44 px en todas las vistas. |
+| Tests existentes y nuevos | PASS | 3 archivos y 8 pruebas aprobados en 2.16 s. |
+| Build | PASS | `npm run build`, 30 módulos, 278 ms. |
+| Lint | PASS | `npm run lint` sin errores ni advertencias. |
+| TypeScript | PASS | `tsc -b --force` sin errores. |
+| Sin lógica funcional prematura | PASS | Solo routing, layout y placeholders; capas de dominio/datos/servicios intactas. |
+| Whitespace | PASS | `git diff --check` sin errores. |
+
+Comandos principales: `source ~/.nvm/nvm.sh`, `nvm use`, `npm test`, `npm run build`, `npm run lint`, `./node_modules/.bin/tsc -b --force`, `npm run dev -- --host 127.0.0.1 --port 5173 --strictPort`, `node /tmp/walking-tracker-t05-browser-check.mjs`, `git diff --check` y `git status --short --branch --untracked-files=all`. El script temporal de verificación utilizó Chrome headless y DevTools, sin instalar tooling ni agregar pruebas E2E al repositorio. Servidor y navegador detenidos al terminar.
+
+Hallazgos resueltos: se eliminó una exportación innecesaria de la tabla de rutas que provocaba advertencia Fast Refresh en lint; se añadió un favicon vacío mediante data URI en index.html para evitar una petición 404. El primer script temporal de navegador tuvo un selector mal escapado, corregido sin afectar la aplicación. Vite y Chrome necesitaron permisos autorizados fuera del entorno restringido (EPERM al abrir el puerto).
+
+Sin bloqueos ni desviaciones en nombres de rutas. La ubicación de App ahora coincide con arquitectura. BrowserRouter conserva las rutas solicitadas; el tratamiento de accesos directos y base path en GitHub Pages deberá validarse en T32, sin configurar deployment en T05. Las comprobaciones móviles son de escritorio emulado, no validación física en iPhone.
+
+Valerio aprobó independientemente los 19 criterios de T05, sin defectos: React Router, cinco vistas, rutas, distintos identificadores dinámicos, enlaces SPA y Atrás, consola sin errores/advertencias, layout móvil, alcance, imports, pruebas, build, lint, TypeScript, diff y estado documental. El cierre incluye una última validación de tests/build/lint/TypeScript forzado y `git diff --check`, seguida del commit autorizado y comprobación de `git status` y `git log -1 --oneline`.
+
+## Historial de T04
+
+T04 ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOSE T04`) y cerrada en `538ad86` (`chore: complete T04 project structure`). Durante T04 únicamente se crearon carpetas; la navegación se incorpora posteriormente en T05.
 
 ## Estructura creada en T04
 
@@ -221,4 +270,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
 
-T04 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. Estructura aprobada creada, sin reubicaciones ni lógica funcional; tests, build, lint y TypeScript validados. README actualizado conforme a la regla permanente. T05 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T05 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Router y vistas Home, Active Walk, History, Walk Detail y Settings creados; navegación y detalle dinámico validados; tests, build, lint y TypeScript aprobados. README actualizado conforme a la regla permanente. T06 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

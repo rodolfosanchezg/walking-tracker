@@ -32,4 +32,4 @@ Respetar React + TypeScript + Vite y el MVP sin backend. Separar UI, dominio, se
 
 ## Estado de preparación
 
-T00, T01, T02, T03 y T04 están aprobadas y cerradas. La base React + TypeScript + Vite, las dependencias aprobadas y el entorno Vitest/RTL están operativos; la estructura de carpetas aprobada está creada, sin lógica funcional. La corrección documental sobre mapas offline está completada. T05 no ha comenzado y requiere autorización explícita del usuario. Implementar integraciones o lógica funcional solo dentro de una tarea autorizada.
+T00–T05 están aprobadas y cerradas. La base React + TypeScript + Vite, las dependencias aprobadas, Vitest/RTL, la estructura de carpetas y la navegación React Router están operativos. Las cinco vistas contienen placeholders, sin lógica funcional de caminatas. La corrección documental sobre mapas offline está completada. T06 no ha comenzado y requiere autorización explícita del usuario. Implementar modelos, integraciones o lógica funcional solo dentro de una tarea autorizada.

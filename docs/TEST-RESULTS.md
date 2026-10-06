@@ -89,3 +89,20 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 | Integridad / whitespace | PASS | README, documentos principales, fuentes y configuraciones intactos; `git diff --check` sin errores. |
 
 App permanece en `src/App.tsx` para conservar la estructura Vite sin reubicaciones innecesarias; router pendiente de T05. Se retiró el marcador innecesario `src/.gitkeep`. Sin dependencias nuevas, lógica funcional ni inicio de T05. Sin bloqueos; cambios incluidos en el commit de cierre autorizado, con README y estado de AGENTS actualizados.
+
+## T05 — Configurar navegación — 2026-10-05
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: `PASS — READY TO CLOSE T05`. Los 19 criterios revisados pasaron, sin defectos. Cierre autorizado por el usuario.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Rutas y navegación | PASS | Cinco cargas directas y flujo de clics en RTL; enlaces SPA y Atrás en Chrome. |
+| Detalle dinámico | PASS | Parámetro walkId renderizado desde URL, sin datos de dominio. |
+| Consola y móvil | PASS | Chrome a 320 × 740 px: cinco vistas sin overflow, nav ≥44 px, sin errores/advertencias finales. |
+| Tests | PASS | 3 archivos y 8 pruebas, 2.16 s; pruebas previas preservadas/adaptadas al router. |
+| Build | PASS | 30 módulos, 278 ms, salida 0. |
+| Lint / TypeScript | PASS | `npm run lint` sin advertencias; `tsc -b --force` sin errores. |
+| Integridad / whitespace | PASS | Documentos fuente, README y dependencias intactos; `git diff --check` sin errores. |
+| Alcance | PASS | Solo router/layout/placeholders. Sin modelos, servicios, tracking, persistencia, mapas o métricas; T06 sin comenzar. |
+
+App reubicado a `src/app/App.tsx`. No hay dependencias nuevas. Se corrigieron una advertencia de exportación Fast Refresh y una petición de favicon 404. QA confirmó también distintos identificadores, consola y layout móvil. Sin bloqueos; deployment y pruebas físicas iPhone pendientes de etapas posteriores. Cambios incluidos en el commit de cierre autorizado, con README y estado de AGENTS actualizados. T06 no ha comenzado.
