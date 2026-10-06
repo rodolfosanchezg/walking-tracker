@@ -4,9 +4,71 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T15 — Implementar procesamiento de altitud.
+T16 — Estado de sesión de caminata.
 
-Estado: T15 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T15). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T15 altitude processing. T16 no ha comenzado.
+Estado: T16 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T16). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T16 walk session state. T17 no ha comenzado.
+
+## Estado y transiciones implementados en T16
+
+src/features/tracking/session.ts contiene reducer/funciones puras para estado local. Solo depende de tipos T06 y helpers de tiempo T13; sin React, Dexie directo, browser APIs, Geolocation, Wake Lock, Page Visibility ni UI. No escribe datos, captura GPS ni recalcula distancia/velocidad/ritmo/elevación.
+
+WalkSession: walkId, name, status, startedAt, endedAt, currentPauseStartedAt, pauses cerradas, interruptions, activeDurationMs, totalDurationMs, stateChangedAt, evaluatedAt, isIncomplete, lastPersistedAt y lastPointTimestamp. Campos y arrays readonly; las transiciones crean nuevo estado sin mutar el previo. No se añaden referencias o conteos GPS todavía; el contrato no los requiere para T16.
+
+API pública:
+
+- createWalkSession(walkId, name?): SessionResult<WalkSession>. Crea idle con tiempos cero y referencias null; ID en blanco se rechaza.
+- canTransition(status, action): boolean. Consulta tabla explícita.
+- transitionSession(session, { type, timestamp }): SessionResult<WalkSession>. Acciones start/pause/resume/mark-incomplete/continue/finish/refresh; timestamps explícitos, sin Date.now.
+- generateWalkName(timestamp): SessionResult<string>. Nombre automático al iniciar si no hay nombre manual, formato Caminata – DD Mon YYYY HH:MM. UTC explícito y meses ingleses estables para determinismo, sin depender de locale/zona del entorno. Nombres manuales se conservan tras trim; blanco equivale a no proporcionado. Cambiar nombre en UI/historial queda para otra tarea.
+- toActiveSessionSnapshot(session): SessionResult<ActiveSession>. Compatible con el parámetro save de ActiveSessionRepository sin importar runtime de repositorios ni realizar escritura.
+
+Transiciones:
+
+| Estado | Acción | Resultado |
+|---|---|---|
+| idle | start | active |
+| active | pause | paused |
+| paused | resume | active |
+| active/paused | mark-incomplete | incomplete |
+| incomplete | continue | active |
+| active/paused/incomplete | finish | finished |
+| active/paused/incomplete | refresh | mismo estado, tiempos actualizados |
+
+Toda otra transición se rechaza, incluidas pausa idle/repetida, resume active, continue no incomplete y cualquier acción tras finished. No se implementa cancelación/descarte de aplicación porque no forma parte de las transiciones mínimas autorizadas de T16.
+
+Errores explícitos SessionResult: ok true/value o ok false/error con kind/message. Kinds invalid-identity, invalid-transition, invalid-timestamp, regressive-time e invalid-state. Fechas no finitas, negativas, fraccionarias, fuera de rango Date o enteros inseguros se rechazan. Timestamp igual al último evento se permite con duración cero; anterior a evaluatedAt (incluido refresh) se rechaza sin alterar estado.
+
+Tiempos en milisegundos: total = tiempo final/evaluado - inicio original, incluyendo pausas; activo usa calculateActiveDurationMs de T13 sobre pausas cerradas y pausa actual abierta. Pause inicia intervalo; resume/finish lo cierran una sola vez. Refresh cambia evaluatedAt pero conserva stateChangedAt. Finalización fija endedAt y no admite posteriores refrescos/transiciones.
+
+Incomplete: marca isIncomplete permanentemente y registra un intervalo interruptions con inicio/fin y previousStatus, conservando walkId/inicio original. Continue o finish cierra la interrupción. Si venía de paused, conserva y luego cierra la misma pausa abierta: toda ella excluida del activo. Si venía de active, el intervalo de interrupción no se convierte en pausa: su tiempo continúa dentro del activo, identificado separadamente conforme al contexto D7; no implica GPS efectivo ni distancia medida. La condición incompleta persiste al continuar/finalizar para la futura integración con Walk.isIncomplete. No se inicia ningún servicio al continuar.
+
+Compatibilidad persistente: ActiveSession T06 permanece intacto. Snapshot contiene walkId/status/inicio/stateChangedAt/duraciones/últimas referencias; solo se permite para active/paused/incomplete. Idle/finished se rechazan. lastPersistedAt/lastPointTimestamp permanecen null mientras ninguna capa autorizada los actualice. No se agrega guardado automático ni recuperación desde IndexedDB. El snapshot existente no serializa historial de pausas/interrupciones o nombre; su reconstrucción y estrategia de persistencia corresponden a T18/T26, no se afirma recuperación completa desde ese objeto en T16.
+
+## Pruebas y verificación de T16
+
+30 pruebas en tests/session.test.ts: idle, identidad/naming, ocho transiciones requeridas, pausa/refresh, dos ciclos, cierre desde paused, incompletitud desde active/paused, continuar/guardar preservando inicio y bandera, transiciones inválidas/repetidas, timestamps iguales/regresivos/invalidos, inputs congelados/determinismo y snapshot compatible con contrato de repository mediante import type sin escritura.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 223 pruebas en 15 archivos, 5.47 s; 193 previas preservadas. |
+| Build | PASS | 30 módulos, 305 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Sin dependencias nuevas, desviaciones ni bloqueos. README actualizado en el cierre formal con T00–T16, estado/transiciones, pausas/incomplete, testing y T17 pendiente. Documentos fuente/modelos/repositorios/servicios/métricas/UI intactos. Vitest mantiene sugerencia informativa de rendimiento jsdom. No se implementan orquestador, GPS en vivo, Wake Lock, Page Visibility funcional, persistencia, métricas de ruta o UI; recuperación de almacenamiento real pendiente de T26. T17 no ha comenzado.
+
+La revisión independiente de Valerio aprobó T16: estado, transiciones válidas/rechazadas, errores explícitos, tiempos, pausas, incomplete, naming, snapshot compatible, pureza/no mutación y determinismo. 223 pruebas, build, lint, TypeScript y git diff --check PASS. Verificó 35 combinaciones estado/acción; escenario 10:00–10:30 con pausa de 5 minutos dio total 30/activo 25; dos pausas dieron total 40/activo 32. Sin defectos ni bloqueos.
+
+Validación final de cierre de T16: npm test -- --run PASS (223 pruebas, 15 archivos, 5.34 s); npm run build PASS (30 módulos, 341 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificó tracking: solo session.ts puro y página placeholder; imports limitados a tipos y tiempo T13, sin orquestador ni integración T17.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T15
+
+T15 ejecutada, aprobada por QA y cerrada en 56bf979 (feat: complete T15 altitude processing).
 
 ## Procesamiento de altitud implementado en T15
 
@@ -798,6 +860,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T16; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T17; Senior Developer únicamente tras esa autorización.
 
-T15 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Altitud, parámetros, suavizado/interpolación, política GPS, ganancia/pérdida y perfil documentados y validados. README actualizado en el cierre formal. T16 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T16 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Estado, transiciones, errores, pausas, tiempos, incomplete y compatibilidad persistente documentados y validados. README actualizado en el cierre formal. T17 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

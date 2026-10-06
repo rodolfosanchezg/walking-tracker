@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T15 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T16 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T16 — Estado de sesión de caminata**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Tiempo total/activo, velocidad promedio, ritmo promedio y conversiones están implementados; clasificación GPS y detección de anomalías están implementadas como dominio puro; procesamiento de altitud implementado como dominio puro; mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T17 — Orquestador de tracking**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Tiempo total/activo, velocidad promedio, ritmo promedio y conversiones están implementados; clasificación GPS y detección de anomalías están implementadas como dominio puro; procesamiento de altitud implementado como dominio puro; mapas, gráficos e historial/configuración funcional siguen pendientes.
 
-Estado del repositorio tras T15: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más distancia, tiempo, promedios, conversiones, clasificación GPS, elevación y 193 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T16: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más distancia, tiempo, promedios, conversiones, clasificación GPS, elevación, estado de sesión y 223 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -31,7 +31,8 @@ Estado del repositorio tras T15: router/layout, cinco páginas base, tipos indep
 - `src/domain/metrics/`: distancia, tiempo total/activo, velocidad/ritmo promedio y conversiones mediante funciones puras.
 - `src/domain/filtering/gpsQuality.ts`: clasificación GPS y señales de anomalía, con umbrales configurables.
 - `src/domain/elevation/elevation.ts`: preparación, suavizado, interpolación, ganancia/pérdida y perfil distancia-altitud.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones, calidad GPS y elevación.
+- `src/features/tracking/session.ts`: estado local y transiciones puras de caminata, con pausas e incompletitud.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones, calidad GPS, elevación y estado de sesión.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -45,7 +46,9 @@ src/
 │   ├── router.tsx
 │   └── providers/
 ├── features/
-│   ├── tracking/ActiveWalkPage.tsx
+│   ├── tracking/
+│   │   ├── ActiveWalkPage.tsx
+│   │   └── session.ts
 │   ├── history/
 │   │   ├── HistoryPage.tsx
 │   │   └── WalkDetailPage.tsx
@@ -90,7 +93,7 @@ src/
 └── index.css
 ```
 
-Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Estado funcional de sesión, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
+Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Orquestador de tracking, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -186,7 +189,17 @@ Altitudes finitas de puntos valid/suspicious participan. low-quality, anomalous 
 
 El perfil distancia-altitud reutiliza distancia T12 e incluye pointId, walkId, timestamp, distanceMeters, altitudeMeters, source, estimated y smoothed. Chart.js aún no está integrado al perfil. Los parámetros están centralizados y requieren calibración real; el detector puede confundir un pico real aislado.
 
-Todavía no existe una sesión funcional completa de tracking ni integración de estos módulos con UI/persistencia. T16 permanece pendiente.
+Todavía no existe una sesión funcional completa de tracking ni integración de estos módulos con UI/persistencia. T17 permanece pendiente.
+
+## Estado de sesión implementado
+
+src/features/tracking/session.ts expone createWalkSession, canTransition, transitionSession, generateWalkName y toActiveSessionSnapshot. WalkSession representa idle, active, paused, incomplete y finished con identidad, nombre, inicio/fin, pausas, interrupciones y tiempos derivados.
+
+Las transiciones son puras y reciben timestamps explícitos. Pausar abre un intervalo; reanudar o finalizar desde pausa lo cierra una sola vez. Tiempo total incluye pausas y tiempo activo las excluye mediante T13. Acciones inválidas, repetidas o timestamps regresivos devuelven errores discriminados sin modificar el estado previo. El nombre automático respeta el formato aprobado con UTC explícito.
+
+Incomplete conserva identidad e inicio original, registra la interrupción y permite continuar o finalizar manteniendo isIncomplete. Una interrupción desde active sigue contando como tiempo activo, identificada por separado; desde paused mantiene la pausa abierta. Eso no implica GPS observado ni distancia medida.
+
+El snapshot es compatible con ActiveSessionRepository sin efectuar escrituras. No serializa el historial completo de pausas/interrupciones; persistencia y reconstrucción desde almacenamiento siguen pendientes. Todavía no existe el orquestador funcional que conecte sesión, GPS, métricas y persistencia. T16 por sí sola no inicia geolocalización ni tracking real.
 
 ## Modelos TypeScript definidos
 
@@ -242,7 +255,7 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 193 pruebas/comprobaciones en catorce archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS y elevación; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 223 pruebas/comprobaciones en quince archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación y estado de sesión; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 

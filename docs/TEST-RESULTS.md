@@ -295,3 +295,23 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Primera suite (191 pruebas) PASS; build detectó errores de tipado en referencia de suavizado y fixtures. Corregidos; suite ampliada y build PASS. Sin dependencias nuevas ni bloqueos. Políticas, umbrales, subtotales y límites del detector/interpolación documentados en CURRENT_STATE. Sin Chart.js, UI, persistencia o tracking. T16 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
 
 Validación final de cierre de T15: npm test -- --run PASS (193 pruebas, 14 archivos, 5.09 s); npm run build PASS (30 módulos, 330 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificaron tracking/App/hooks/providers: solo página placeholder y marcadores existentes, sin lógica de estado de sesión T16.
+
+## T16 — Estado de sesión de caminata — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T16. Sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Estado / transiciones | PASS | Idle/active/paused/incomplete/finished; tabla explícita, acciones inválidas/repetidas rechazadas. |
+| Pausas / tiempos | PASS | T13 reutilizado; intervalos abiertos/cerrados, dos ciclos, cierre al finalizar, activo excluye pausa y total la incluye. |
+| Incomplete | PASS | Conserva identidad/inicio, registra interrupción y bandera persistente; continuar/guardar coherentes desde active/paused. |
+| Errores / pureza | PASS | Resultados discriminados, timestamps iguales/regresivos/invalidos, entradas congeladas y determinismo. |
+| Naming / snapshot | PASS | Formato aprobado UTC o nombre manual; contrato ActiveSessionRepository comprobado sin escritura. |
+| Tests | PASS | 223 pruebas, 15 archivos, 5.47 s; 30 nuevas y 193 previas. |
+| Build | PASS | 30 módulos, 305 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; modelos/servicios/repositorios/métricas/UI/README/documentos fuente intactos. |
+
+Sin dependencias nuevas ni bloqueos. Sin orquestador, GPS/Wake Lock/Visibility, persistencia automática ni recuperación de almacenamiento. Snapshot compatible sin historial completo; integración T18/T26 pendiente. T17 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
+
+Validación final de cierre de T16: npm test -- --run PASS (223 pruebas, 15 archivos, 5.34 s); npm run build PASS (30 módulos, 341 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificó tracking: solo session.ts puro y página placeholder; imports limitados a tipos y tiempo T13, sin orquestador ni integración T17.
