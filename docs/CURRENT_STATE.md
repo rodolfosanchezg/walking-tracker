@@ -4,9 +4,60 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T07 — Configurar Dexie e IndexedDB.
+T08 — Crear repositories.
 
-Estado: T07 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T07). Cierre formal autorizado por el usuario mediante el commit feat: complete T07 Dexie IndexedDB setup. T08 no ha comenzado.
+Estado: T08 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T08). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T08 data repositories. T09 no ha comenzado.
+
+## Repositories creados en T08
+
+Cuatro clases pequeñas en `src/data/repositories/`, con instancia WalkingTrackerDatabase de T07 inyectada y privada. Reutilizan modelos T06, esquema v1 y claves singleton existentes. APIs públicas con Promise y datos de dominio; no exponen tablas ni consultas Dexie. index.ts reexporta los cuatro repositorios sin crear instancias ni abrir bases. UI y dominio no importan Dexie ni consumen directamente la base; no se integra todavía persistencia con la aplicación.
+
+| Repository | API pública |
+|---|---|
+| WalkRepository | create(walk): Promise<string>; getById(id): Promise<Walk \| undefined>; list(): Promise<Walk[]>; update(id, Partial<Omit<Walk, 'id'>>): Promise<boolean>; delete(id): Promise<void> |
+| TrackPointRepository | add(point): Promise<string>; bulkAdd(readonly TrackPoint[]): Promise<void>; getByWalkId(walkId): Promise<TrackPoint[]>; deleteByWalkId(walkId): Promise<number> |
+| ActiveSessionRepository | save(session): Promise<void>; get(): Promise<ActiveSession \| undefined>; clear(): Promise<void> |
+| SettingsRepository | get(): Promise<Settings \| undefined>; save(settings): Promise<void>; update(Partial<Settings>): Promise<boolean> |
+
+Semántica de persistencia:
+
+- create/add insertan y rechazan IDs duplicados sin sobrescribir. get ausente devuelve undefined; list vacío y getByWalkId sin coincidencias devuelven arrays vacíos.
+- update modifica solo campos especificados y devuelve false si el registro no existe, sin crearlo. Walk.id se excluye del tipo de cambios. Campos métricos completos se reemplazan sin cálculos ni merge de subcampos.
+- delete/clear son idempotentes. Walk.delete solo elimina Walk; no agrega cascadas sobre puntos/sesión. deleteByWalkId usa el índice existente y devuelve cantidad borrada. Políticas de borrado coordinado quedan fuera de esta tarea.
+- getByWalkId usa el índice walkId y ordena los puntos por timestamp, sin índices nuevos ni filtrado GPS.
+- bulkAdd se ejecuta en transacción: un fallo revierte el bloque completo. Array vacío no cambia datos.
+- save de sesión/ajustes reemplaza mediante claves current/preferences; update de settings no introduce defaults. No se añaden opciones futuras.
+- Errores de almacenamiento se propagan como rechazo de Promise; no se ocultan ni convierten en falsos éxitos. No se duplican validaciones de dominio ni se implementa recuperación.
+
+## Pruebas y verificación de T08
+
+`tests/repositories.test.ts` agrega 17 pruebas contra createDatabase de T07 con una IDBFactory en memoria por prueba. afterEach elimina la base y verifica ausencia de residuos. Casos: CRUD Walk, ausentes y duplicados; add/bulkAdd/getByWalkId/deleteByWalkId con exclusión de otros walks y orden temporal; bloque vacío y rollback ante duplicado; sesión save/get/clear y sustitución única; settings save/get/update, conservación de campos y ausencia de defaults; errores propagados con base cerrada. Datos ficticios, sin acceso a IndexedDB real ni globals modificados.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Cuatro repositories / encapsulación | PASS | Instancia privada inyectada; solo modelos/Promise en API pública; sin React/GPS/UI/métricas. |
+| CRUD Walk | PASS | Create/get/list/update/delete, ausentes, duplicados e independencia de otros registros. |
+| Puntos por walkId | PASS | Add/bulkAdd, consulta indexada, borrado selectivo y rollback atómico. |
+| Sesión activa | PASS | Save/get/clear, reemplazo único y clear idempotente. |
+| Settings | PASS | Save/get/update, preservación de campos, singleton y actualización ausente false. |
+| Tests | PASS | 6 archivos y 35 pruebas en 2.81 s; 18 pruebas previas preservadas. |
+| Build | PASS | 30 módulos, 350 ms, salida 0. |
+| Lint | PASS | Sin errores ni advertencias. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Entorno Node 24.21.0 y npm 11.19.0.
+
+Sin bloqueos ni desviaciones arquitectónicas. Sin dependencias nuevas, cambios a DB/esquema/modelos, UI, rutas o documentos principales. Se retira src/data/repositories/.gitkeep porque hay implementación. README actualizado durante el cierre formal después de QA; incluye repositories, testing, tareas T00–T08 y T09 pendiente. Sin geolocalización, tracking, métricas, filtros ni recuperación funcional. Las pruebas siguen limitadas al simulador; cuotas y durabilidad Safari quedan para validaciones posteriores. T09 no ha comenzado.
+
+La revisión independiente de Valerio aprobó los 22 criterios de T08, con 35 pruebas PASS, build, lint, TypeScript y git diff --check correctos. Sin defectos ni bloqueos. El cierre incluye una última ejecución de esas validaciones y comprobación de git status y git log -1 --oneline después del commit.
+
+
+Validación final de cierre de T08: npm test -- --run PASS (35 pruebas, 6 archivos, 2.55 s); npm run build PASS (30 módulos, 309 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T09 sin iniciar.
+
+## Historial de T07
+
+T07 ejecutada, aprobada por QA (Valerio: PASS — READY TO CLOSE T07) y cerrada en 36468ab (feat: complete T07 Dexie IndexedDB setup). Durante T07 se definió la base; la capa de repositorios se incorpora posteriormente en T08.
 
 ## Base local definida en T07
 
@@ -376,6 +427,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T09; Senior Developer únicamente tras esa autorización.
 
-T07 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Dexie/IndexedDB v1, tablas e índices documentados; lectura/escritura, consulta walkId y limpieza validadas. README actualizado conforme a la regla permanente. T08 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T08 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Repositories y operaciones documentados; pruebas validadas. README actualizado durante el cierre formal. T09 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

@@ -142,3 +142,24 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 | Integridad / whitespace | PASS | UI/modelos/README/documentos principales intactos; git diff --check aprobado. |
 
 fake-indexeddb 6.2.5 añadido solo como devDependency para simular IndexedDB. Sin repositories ni CRUD de aplicación; T08 no ha comenzado. Esquema y limitaciones detallados en CURRENT_STATE. Sin bloqueos; cambios incluidos en el commit autorizado de cierre, con README y estado de AGENTS actualizados.
+
+## T08 — Crear repositories — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T08. Los 22 criterios fueron aprobados; 35 pruebas PASS, build, lint, TypeScript y git diff --check correctos. Sin defectos ni bloqueos.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Cuatro repositorios encapsulados | PASS | DB privada inyectada; API de modelos/Promise; sin React/GPS/métricas. |
+| Walk CRUD | PASS | Create/get/list/update/delete; ausentes, duplicados, conservación de campos y borrado idempotente. |
+| TrackPoint por walkId | PASS | Add/bulkAdd, consulta indexada ordenada, exclusión/borrado selectivo, bloque vacío y rollback ante fallo. |
+| ActiveSession | PASS | Save/get/clear, sustitución única, ausencia e idempotencia. |
+| Settings | PASS | Save/get/update, sustitución única, preservación de campos y ausente sin defaults. |
+| Errores y aislamiento | PASS | Base cerrada rechaza operaciones; IDBFactory por prueba; teardown sin residuos ni datos reales. |
+| Tests | PASS | 35 pruebas, 6 archivos, 2.81 s; 17 nuevas y 18 previas. |
+| Build | PASS | 30 módulos, 350 ms, salida 0. |
+| Lint / TypeScript | PASS | Lint sin advertencias; tsc -b --force sin errores. |
+| Integridad / whitespace | PASS | DB/modelos/UI/README/documentos fuente/dependencias intactos; git diff --check aprobado. |
+
+Sin dependencias nuevas ni integración UI, tracking, métricas, filtros o recuperación. Walk.delete no añade cascadas; políticas coordinadas pendientes de etapas funcionales. T09 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Sin bloqueos.
+
+Validación final de cierre de T08: npm test -- --run PASS (35 pruebas, 6 archivos, 2.55 s); npm run build PASS (30 módulos, 309 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T09 sin iniciar.
