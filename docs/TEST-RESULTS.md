@@ -182,3 +182,21 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Sin dependencias adicionales ni GPS real. Sin tracking funcional, persistencia, Page Visibility o Wake Lock. Limitaciones de permisos y dispositivo real pendientes de tareas posteriores. T10 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Sin bloqueos.
 
 Validación final de cierre de T09: npm test -- --run PASS (52 pruebas, 7 archivos, 3.27 s); npm run build PASS (30 módulos, 325 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T10 sin iniciar.
+
+## T10 — Servicio de Page Visibility — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T10. Los 24 criterios fueron aprobados; sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Encapsulación / estado | PASS | document.visibilityState y visibilitychange; visible/hidden, fallback unknown. |
+| Suscripciones / cleanup | PASS | Listener independiente por suscripción; eliminación exacta e idempotente, cancelación selectiva y callbacks tardíos ignorados. |
+| Independencia | PASS | Servicio sin imports; sin React, persistencia, GPS, UI ni comportamiento funcional. |
+| Tests | PASS | 63 pruebas, 8 archivos, 3.65 s; 11 nuevas con spies/eventos y 52 previas. Cleanup y restauración de mocks. |
+| Build | PASS | 30 módulos, 308 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; README/documentos fuente/UI/datos intactos. |
+
+Sin dependencias nuevas ni bloqueos. Sugerencia informativa de rendimiento jsdom de Vitest; se mantiene aislamiento. Sin flush, tracking integrado, persistencia, UI o Wake Lock. T11 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
+
+Validación final de cierre de T10: npm test -- --run PASS (63 pruebas, 8 archivos, 3.65 s); npm run build PASS (30 módulos, 431 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T11 sin iniciar.

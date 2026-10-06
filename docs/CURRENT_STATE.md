@@ -4,9 +4,50 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T09 — Servicio de geolocalización.
+T10 — Servicio de Page Visibility.
 
-Estado: T09 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T09). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T09 geolocation service. T10 no ha comenzado.
+Estado: T10 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T10). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T10 page visibility service. T11 no ha comenzado.
+
+## Servicio de Page Visibility creado en T10
+
+src/services/visibility/visibilityService.ts encapsula document.visibilityState y el evento visibilitychange. No tiene imports ni dependencias de React, Dexie, repositories, GPS o dominio. No registra listeners al importar o construir; admite documento inyectado para pruebas. Sin documento disponible, la creación falla explícitamente en vez de inventar un estado de visibilidad.
+
+API pública:
+
+- createVisibilityService(injectedDocument?): VisibilityService.
+- getCurrentState(): VisibilityState. Consulta el estado actual, sin snapshot obsoleto.
+- subscribe(callback): () => void. Registra una suscripción a eventos futuros y devuelve su cleanup; no emite un estado inicial automáticamente (se obtiene mediante getCurrentState).
+- VisibilityState: visible | hidden | unknown. Valores no reconocidos se normalizan a unknown, sin asumir que la página es visible ni decidir acciones funcionales.
+
+Cada suscripción crea un listener independiente. El callback recibe el estado leído al producirse visibilitychange. Cleanup retira exactamente ese listener, es idempotente e invalida invocaciones tardías; cancelar una suscripción no afecta a otras, incluso cuando comparten callback. El consumidor es responsable de llamar al cleanup de cada suscripción. No hay listeners globales ni suscripciones implícitas.
+
+Referencia técnica: [HTML Standard, Page visibility](https://html.spec.whatwg.org/multipage/interaction.html#page-visibility).
+
+## Pruebas y verificación de T10
+
+11 pruebas en tests/visibility.test.ts, con spies sobre document.visibilityState, addEventListener y removeEventListener y eventos simulados. Cubren visible/hidden, lectura actualizada, registro de evento, callback/estado actualizado, cleanup exacto e idempotente, suscripciones independientes, cancelación selectiva, mismo callback, estados desconocidos, callbacks tardíos, documento inyectado y ausencia de documento. afterEach limpia las suscripciones y restaura spies/globals; sin interacción manual con navegador real.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 63 pruebas en 8 archivos, 3.65 s; 52 anteriores preservadas. |
+| Build | PASS | 30 módulos, 308 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Sin dependencias nuevas, desviaciones ni bloqueos. Se retira el .gitkeep de visibility porque contiene implementación. Vitest muestra una sugerencia de rendimiento sobre creación de entornos jsdom; no es un fallo y se conserva el aislamiento existente. No se implementan flush, advertencias, huecos de tracking, persistencia, UI ni Wake Lock. El comportamiento funcional ante cambios de visibilidad permanece pendiente de tareas posteriores. README actualizado durante el cierre formal con Page Visibility, testing y T11 pendiente. Documentos fuente intactos. T11 no ha comenzado.
+
+La revisión independiente de Valerio aprobó los 24 criterios de T10: API de lectura/suscripción/cleanup, múltiples suscripciones y cleanup repetido, independencia y alcance, 63 pruebas PASS, build, lint, TypeScript y git diff --check. La comprobación adicional con documento simulado verificó cero listeners registrados tras cleanup. Sin defectos ni bloqueos.
+
+Validación final de cierre de T10: npm test -- --run PASS (63 pruebas, 8 archivos, 3.65 s); npm run build PASS (30 módulos, 431 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T11 sin iniciar.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T09
+
+T09 ejecutada, aprobada por QA y cerrada en fe2eefb (feat: complete T09 geolocation service).
 
 ## Servicio de geolocalización creado en T09
 
@@ -475,6 +516,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T10; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T11; Senior Developer únicamente tras esa autorización.
 
-T09 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Servicio, opciones, errores y pruebas documentados. README actualizado durante el cierre formal. T10 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T10 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Servicio, API, suscripciones y cleanup documentados y validados. README actualizado durante el cierre formal. T11 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
