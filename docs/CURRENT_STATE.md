@@ -1,12 +1,62 @@
 # Estado actual — Walking Tracker
 
-Fecha: 2026-10-05 (America/Bogota).
+Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T05 — Configurar navegación.
+T06 — Definir modelos TypeScript.
 
-Estado: T05 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T05`). Cierre formal autorizado por el usuario mediante el commit `feat: complete T05 navigation setup`. T06 no ha comenzado.
+Estado: T06 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T06`). Cierre formal autorizado por el usuario mediante el commit `feat: complete T06 TypeScript domain models`. T07 no ha comenzado.
+
+## Modelos definidos en T06
+
+Tipos sin implementación runtime en `src/types/`, con imports/exports exclusivamente de tipos:
+
+- `Walk`: id, nombre, timestamps de inicio/fin, duración activa/total, distancia, velocidad/ritmo promedio, elevación ganada/perdida, estado e indicador incompleto.
+- `TrackPoint`: id, walkId, timestamp, coordenadas, altitud, precisión, velocidad, calidad y discriminante estimated. Datos GPS readonly para no sobrescribir valores observados al calcular/filtrar posteriormente.
+- `ActiveSession`: walkId, estado active/paused/incomplete, inicio original, última transición, duración activa/total acumulada, último snapshot persistido y timestamp del último punto persistido para identificar un hueco de tracking. Sin lógica de recuperación.
+- `Settings`: únicamente unitSystem (metric/imperial) y keepScreenAwake.
+- `WalkStatus`: idle, active, paused, incomplete, finished.
+- `ActiveSessionStatus`: subconjunto active, paused, incomplete; no representa ausencia de sesión ni sesiones finalizadas.
+- `GpsQuality`: valid, low-quality, suspicious, anomalous, estimated.
+- `MetricValue`: valor numérico con indicador estimated, o value=null/estimated=false cuando no está disponible.
+- `UnitSystem`: metric/imperial. `index.ts` ofrece exportaciones de tipos, sin duplicar definiciones.
+
+## Unidades y nulabilidad
+
+- Todos los timestamps son números Unix en milisegundos. Duraciones en milisegundos, distancia/elevación en metros, velocidad en metros/segundo, ritmo en segundos/kilómetro. Settings controla futuras conversiones de presentación; no se implementan ahora.
+- Walk.startedAt=null permite estado idle antes de iniciar. Walk.endedAt=null representa ausencia de finalización; no se inventan fechas.
+- Métricas value=null indican datos insuficientes o cálculo no disponible; cero sigue siendo un valor conocido. Cada métrica puede marcarse estimada individualmente; no se aplica un único indicador ambiguo a todo el resumen.
+- TrackPoint.altitude y speed admiten null por ausencia de dato GPS o imposibilidad de estimación. Latitud, longitud y timestamp son obligatorios para cualquier punto.
+- Un punto observado exige accuracy numérica, estimated=false y calidad distinta de estimated; un punto sintético exige estimated=true/quality=estimated y puede tener accuracy=null porque no hay precisión medida. La unión impide mezclar ambos orígenes en el tipado.
+- Los valores observados se conservan directamente en los campos GPS readonly. Las futuras series filtradas/interpoladas deben derivarse por separado; readonly no congela objetos en runtime ni implementa integridad de almacenamiento.
+- ActiveSession.lastPersistedAt=null antes del primer guardado; lastPointTimestamp=null sin puntos persistidos. startedAt es obligatorio porque una sesión activa ya fue iniciada. stateChangedAt permite interpretar acumuladores al retomar sin implementar tiempos todavía.
+- Se activa strictNullChecks en tsconfig.app.json para hacer efectiva la nulabilidad explícita. No se modifica el stack ni se añaden dependencias.
+
+## Verificación de T06
+
+Node.js `24.21.0` mediante NVM y npm `11.19.0`. `tests/models.test.ts` agrega cuatro grupos de comprobaciones expectTypeOf: estados/nulabilidad de Walk y métricas, discriminantes y nulabilidad de TrackPoint, estados/identificación de sesión y campos exactos de Settings. Estas aserciones validan tipos mediante TypeScript; Vitest transpila y no reemplaza la compilación.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Modelos, estados y unidades consistentes | PASS | Cuatro modelos requeridos, estados aprobados y tipos compartidos sin duplicación. |
+| Nulabilidad y origen de datos | PASS | null documentado; discriminantes de TrackPoint y estimación por métrica. |
+| Independencia | PASS | Interfaces/types, sin clases ni imports React, Dexie o APIs del navegador. |
+| Tests | PASS | 4 archivos y 12 pruebas aprobados en 2.26 s; 8 pruebas previas preservadas. |
+| Build | PASS | `npm run build`, 30 módulos, 343 ms. |
+| Lint | PASS | `npm run lint`, sin errores ni advertencias. |
+| TypeScript | PASS | `tsc -b --force`, sin errores, incluyendo comprobaciones expectTypeOf. |
+| Whitespace | PASS | `git diff --check`, sin errores. |
+
+Comandos: `source ~/.nvm/nvm.sh`, `nvm use`, `npm test`, `npm run build`, `npm run lint`, `./node_modules/.bin/tsc -b --force`, `git diff --check` y `git status --short --branch --untracked-files=all`.
+
+Se retira src/types/.gitkeep porque la carpeta contiene tipos. README y estado de AGENTS actualizados durante el cierre autorizado: T00–T06 completadas, modelos/nulabilidad/testing disponibles, navegación placeholder y T07 pendiente; sin persistencia funcional. Sin cambios en UI/rutas, dominio funcional, persistencia, servicios, dependencias ni los cuatro documentos principales. Sin desviaciones arquitectónicas ni bloqueos pendientes; umbrales, algoritmos, invariantes temporales y políticas de recuperación siguen pendientes de sus tareas correspondientes.
+
+Valerio aprobó independientemente los 21 criterios de T06, sin defectos. Revisó directamente modelos y nulabilidad, comprobó independencia, coherencia y ausencia de T07, ejecutó tests/build/lint/TypeScript y siete casos negativos y dos positivos de tipos en memoria. El cierre incluye una última ejecución de tests, build, lint, TypeScript forzado y git diff --check, seguida del commit autorizado y comprobación de git status y git log -1 --oneline.
+
+## Historial de T05
+
+T05 ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOSE T05`) y cerrada en `dfb2a58` (`feat: complete T05 navigation setup`). Durante T05 solo se incorporó navegación; los modelos se añaden posteriormente en T06.
 
 ## Navegación creada en T05
 
@@ -270,4 +320,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
 
-T05 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Router y vistas Home, Active Walk, History, Walk Detail y Settings creados; navegación y detalle dinámico validados; tests, build, lint y TypeScript aprobados. README actualizado conforme a la regla permanente. T06 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T06 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Modelos, estados y nulabilidad documentados; tests, build, lint y TypeScript validados. README actualizado conforme a la regla permanente. T07 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

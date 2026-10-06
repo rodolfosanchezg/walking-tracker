@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T05 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura aprobada, el testing y la navegación SPA están operativos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T06 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura aprobada, el testing y la navegación SPA están operativos; los modelos TypeScript base están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T06 — Definir modelos TypeScript**. No ha comenzado y requiere autorización del usuario. Todavía no hay modelos de dominio, tracking GPS, métricas, mapas, gráficos, historial/configuración funcional ni persistencia.
+La siguiente tarea pendiente es **T07 — Configurar Dexie e IndexedDB**. No ha comenzado y requiere autorización del usuario. Dexie está instalado, pero todavía no existe persistencia IndexedDB/Dexie funcional, esquema de base de datos ni repositories. Tampoco hay tracking GPS, cálculos de métricas, mapas, gráficos o historial/configuración funcional.
 
-Estado del repositorio tras T05: router y layout en `src/app/`, cinco páginas base y ocho pruebas. App fue reubicado a `src/app/App.tsx`; los imports están actualizados. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T06: router y layout en `src/app/`, cinco páginas base, tipos independientes en `src/types/` y doce pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -22,7 +22,8 @@ Estado del repositorio tras T05: router y layout en `src/app/`, cinco páginas b
 
 - `docs/`: requisitos, decisiones, arquitectura, plan de implementación, estado y evidencias de validación.
 - `src/`: estructura aprobada, router/layout compartido, páginas placeholder, entrada React y CSS móvil simple.
-- `tests/`: setup jest-dom/cleanup RTL, prueba de App, prueba de función fixture y pruebas de navegación.
+- `src/types/`: modelos y estados sin implementación runtime, independientes de React y persistencia.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación y comprobaciones de tipos.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -59,11 +60,28 @@ src/
 ├── hooks/
 ├── utils/
 ├── types/
+│   ├── activeSession.ts
+│   ├── index.ts
+│   ├── metricValue.ts
+│   ├── settings.ts
+│   ├── states.ts
+│   ├── trackPoint.ts
+│   └── walk.ts
 ├── main.tsx
 └── index.css
 ```
 
-Las 16 carpetas finales todavía vacías contienen `.gitkeep`; se retiraron los marcadores de tracking, history y settings al incorporar páginas. No hay modelos ni servicios funcionales.
+Las 15 carpetas finales todavía vacías contienen `.gitkeep`; se retiró también el marcador de types al definir modelos. No hay servicios funcionales.
+
+## Modelos TypeScript definidos
+
+- `Walk`: identificación, nombre, inicio/fin, duración activa/total, distancia, velocidad/ritmo promedio, elevación, estado e indicador de caminata incompleta.
+- `TrackPoint`: identificación y walkId, timestamp, coordenadas, altitud, precisión, velocidad, calidad y discriminante de punto observado/estimado; datos GPS readonly.
+- `ActiveSession`: caminata, estado, inicio original, transición, duraciones acumuladas y referencias al último snapshot/punto persistido. Declara datos de recuperación sin implementarla.
+- `Settings`: únicamente unidades metric/imperial y preferencia de mantener pantalla encendida.
+- `WalkStatus`: idle, active, paused, incomplete, finished. `GpsQuality`: valid, low-quality, suspicious, anomalous, estimated. Tipos compartidos: ActiveSessionStatus, UnitSystem y MetricValue.
+
+Timestamps/duraciones en milisegundos, distancias/elevación en metros, velocidad en m/s y ritmo en segundos/km. Altitud y velocidad GPS admiten null; inicio/fin y referencias de persistencia también cuando no existen. MetricValue distingue valor no disponible de cero e identifica estimación por métrica. strictNullChecks está activo. Los tipos no ejecutan cálculos ni validaciones runtime.
 
 ## Navegación disponible
 
@@ -109,11 +127,12 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta ocho pruebas de bootstrap y navegación una vez; para modo watch puede utilizarse `npm test -- --watch`. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta doce pruebas/comprobaciones en cuatro archivos: bootstrap, navegación y modelos; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
-- Las páginas contienen placeholders; aún no hay funcionalidades de caminatas. Las pruebas actuales cubren bootstrap y navegación.
+- Las páginas contienen placeholders; aún no hay funcionalidades de caminatas ni persistencia IndexedDB/Dexie. Las pruebas actuales cubren bootstrap, navegación y contratos de tipos.
+- readonly no congela objetos en runtime; rangos, invariantes temporales, filtros, métricas y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.
 - El tracking confiable del MVP requerirá página visible y activa; no se garantiza con pantalla bloqueada ni navegador en segundo plano.
 - El acceso a ubicación requerirá HTTPS y permiso del usuario.

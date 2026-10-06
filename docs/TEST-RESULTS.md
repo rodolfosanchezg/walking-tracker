@@ -106,3 +106,20 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 | Alcance | PASS | Solo router/layout/placeholders. Sin modelos, servicios, tracking, persistencia, mapas o métricas; T06 sin comenzar. |
 
 App reubicado a `src/app/App.tsx`. No hay dependencias nuevas. Se corrigieron una advertencia de exportación Fast Refresh y una petición de favicon 404. QA confirmó también distintos identificadores, consola y layout móvil. Sin bloqueos; deployment y pruebas físicas iPhone pendientes de etapas posteriores. Cambios incluidos en el commit de cierre autorizado, con README y estado de AGENTS actualizados. T06 no ha comenzado.
+
+## T06 — Definir modelos TypeScript — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: `PASS — READY TO CLOSE T06`. Los 21 criterios revisados pasaron, sin defectos; QA verificó también siete casos negativos y dos positivos de tipos en memoria. Cierre autorizado por el usuario.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Modelos y estados | PASS | Walk, TrackPoint, ActiveSession, Settings y estados aprobados definidos mediante interfaces/types. |
+| Nulabilidad / estimación | PASS | Null explícito, strictNullChecks activo, unión observados/sintéticos y MetricValue con origen por métrica. |
+| Independencia | PASS | Solo imports de tipos locales; sin React, Dexie, APIs, clases o implementación de T07. |
+| Tests | PASS | 12 pruebas en 4 archivos, 2.26 s; 4 comprobaciones nuevas de tipos y 8 pruebas previas. |
+| Build | PASS | 30 módulos, 343 ms, salida 0. |
+| Lint | PASS | Sin errores ni advertencias. |
+| TypeScript | PASS | `tsc -b --force` verifica modelos y expectTypeOf sin errores. |
+| Integridad / whitespace | PASS | Fuentes UI/rutas, dependencias, README y documentos principales intactos; `git diff --check` aprobado. |
+
+ExpectTypeOf valida durante compilación; el resultado Vitest por sí solo no demuestra tipado. No se implementan cálculos, validadores runtime, filtros, persistencia ni recuperación. Sin dependencias nuevas, desviaciones ni bloqueos. T07 no ha comenzado; cambios incluidos en el commit autorizado de cierre, con README y estado de AGENTS actualizados.
