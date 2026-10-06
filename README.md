@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T12 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T13 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T13 — Tiempo, velocidad y ritmo**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Velocidad, ritmo y conversiones de presentación todavía no están implementados; mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T14 — Calidad GPS y anomalías**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Tiempo total/activo, velocidad promedio, ritmo promedio y conversiones están implementados; clasificación GPS y detección de anomalías todavía no están implementadas; mapas, gráficos e historial/configuración funcional siguen pendientes.
 
-Estado del repositorio tras T12: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más cálculo de distancia y 102 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T13: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más distancia, tiempo, promedios, conversiones y 133 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -28,8 +28,8 @@ Estado del repositorio tras T12: router/layout, cinco páginas base, tipos indep
 - `src/services/geolocation/`: observación de posiciones y errores, con inicio/detención y sin integración UI.
 - `src/services/visibility/`: lectura de visibilidad, suscripción a cambios y cleanup independiente.
 - `src/services/wakeLock/`: soporte, solicitud/liberación de bloqueo de pantalla, estado y notificaciones de release.
-- `src/domain/metrics/distance.ts`: distancia entre coordenadas y acumulación medida mediante funciones puras.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculo de distancia.
+- `src/domain/metrics/`: distancia, tiempo total/activo, velocidad/ritmo promedio y conversiones mediante funciones puras.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios y conversiones.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -65,7 +65,11 @@ src/
 │   │   └── index.ts
 │   └── migrations/
 ├── domain/
-│   ├── metrics/distance.ts
+│   ├── metrics/
+│   │   ├── distance.ts
+│   │   ├── time.ts
+│   │   ├── averages.ts
+│   │   └── conversions.ts
 │   ├── elevation/
 │   ├── filtering/
 │   └── estimation/
@@ -84,7 +88,7 @@ src/
 └── index.css
 ```
 
-Las 9 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Tiempo, velocidad, ritmo, otras métricas, integraciones y migraciones futuras siguen pendientes.
+Las 9 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Clasificación GPS/anomalías, elevación, estimación, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -148,7 +152,17 @@ Usan Haversine sobre una esfera de radio medio 6 371 000 m y devuelven metros. L
 
 La acumulación acepta puntos medidos valid y suspicious con coordenadas seguras. Excluye anomalous, low-quality pendiente de evaluación y estimated. Los puntos excluidos cortan el segmento, sin conectar a través del hueco ni mezclar walkId distintos. El resultado es un subtotal medido; la estimación de huecos queda para tareas posteriores.
 
-Las pruebas cubren referencias geográficas aproximadas, acumulación, exclusiones, repetidos, coordenadas negativas, antimeridiano, estabilidad numérica y entradas congeladas. Velocidad, ritmo y conversiones de presentación todavía no están implementados.
+Las pruebas cubren referencias geográficas aproximadas, acumulación, exclusiones, repetidos, coordenadas negativas, antimeridiano, estabilidad numérica y entradas congeladas. Los promedios y helpers de conversión se incorporan en T13, sin integración con UI.
+
+## Tiempo, velocidad, ritmo y conversiones implementados
+
+Las funciones de time.ts calculan tiempo total y activo en milisegundos. El total incluye pausas; el activo excluye la unión de sus intervalos, recortados al periodo evaluado. Pausas abiertas se evalúan hasta el instante final recibido; solapamientos no se descuentan dos veces. No hay reloj implícito ni mutación de entradas.
+
+averages.ts calcula velocidad promedio en m/s como distancia en metros / segundos activos, y ritmo promedio en segundos/km como segundos activos / kilómetros. Ambas funciones reciben tiempo activo, no tiempo total.
+
+conversions.ts ofrece metros→kilómetros/millas, m/s→km/h/mph y segundos/km→min/km/min/milla, utilizando la milla internacional de 1609.344 m. No agrega selección de unidades ni formato UI.
+
+Los datos inválidos o métricas no calculables devuelven null, incluidos NaN, Infinity, negativos, divisores cero y desbordamientos. Distancia cero con tiempo activo positivo da velocidad cero; ritmo sin distancia da null. Duraciones cero válidas se conservan. La clasificación GPS/anomalías, velocidad/ritmo actuales y tracking integrado siguen pendientes.
 
 ## Modelos TypeScript definidos
 
@@ -204,13 +218,13 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 102 pruebas/comprobaciones en diez archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock y distancia; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 133 pruebas/comprobaciones en doce archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios y conversiones; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
 - Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. El servicio de geolocalización está probado con mocks, sin tracking funcional integrado con UI/persistencia ni flujos de caminatas.
 - Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
-- readonly no congela objetos en runtime; rangos, invariantes temporales, filtros, métricas y recuperación siguen pendientes de implementación.
+- readonly no congela objetos en runtime; validaciones de dominio adicionales, clasificación GPS, filtros, elevación, estimación y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.
 - El tracking confiable del MVP requerirá página visible y activa; no se garantiza con pantalla bloqueada ni navegador en segundo plano.
 - El acceso a ubicación requerirá HTTPS y permiso del usuario.

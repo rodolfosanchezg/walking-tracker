@@ -4,9 +4,62 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T12 — Implementar cálculo de distancia.
+T13 — Implementar tiempo, velocidad y ritmo.
 
-Estado: T12 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T12). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T12 distance calculation. T13 no ha comenzado.
+Estado: T13 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T13). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T13 time speed and pace metrics. T14 no ha comenzado.
+
+## Métricas y conversiones implementadas en T13
+
+Tres módulos nuevos en src/domain/metrics/, independientes de React, Dexie, repositories y APIs del navegador; funciones puras sin reloj implícito ni mutación. distance.ts de T12 se conserva intacto. No se implementa tracking ni clasificación GPS.
+
+Unidades internas: timestamps Unix y duración en milisegundos, distancia en metros, velocidad promedio en m/s y ritmo promedio en segundos/km, coherentes con Walk de T06.
+
+API pública:
+
+- PauseInterval: startedAt y endedAt readonly; endedAt null representa pausa abierta.
+- calculateTotalDurationMs(startedAt, endedAt): number | null. Total = final - inicio, incluyendo pausas. El final puede ser el instante de evaluación recibido para una caminata en curso; no se consulta Date.now. Fechas ausentes producen null.
+- calculateActiveDurationMs(startedAt, endedAt, pauses = []): number | null. Activo = total menos la unión de pausas recortadas al intervalo. Copia los intervalos antes de ordenar; une solapamientos/duplicados/contiguos sin restarlos dos veces. Pausa abierta se evalúa hasta endedAt recibido. Pausas válidas completamente fuera del intervalo no descuentan tiempo; pausas invertidas o no finitas invalidan el resultado.
+- calculateAverageSpeedMetersPerSecond(distanceMeters, activeDurationMs): number | null. Velocidad = distancia / (tiempo activo / 1000). No recibe tiempo total.
+- calculateAveragePaceSecondsPerKilometer(distanceMeters, activeDurationMs): number | null. Ritmo = (tiempo activo / 1000) / (distancia / 1000), equivalente a tiempo activo ms / distancia m, en segundos/km. No recibe tiempo total.
+
+Helpers de conversions.ts:
+
+| Helper | Conversión |
+|---|---|
+| metersToKilometers | m / 1000 |
+| metersToMiles | m / 1609.344 (milla internacional) |
+| metersPerSecondToKilometersPerHour | m/s × 3.6 |
+| metersPerSecondToMilesPerHour | m/s × 3600 / 1609.344 |
+| secondsPerKilometerToMinutesPerKilometer | s/km / 60 |
+| secondsPerKilometerToMinutesPerMile | s/km × 1.609344 / 60 |
+
+Resultados no calculables se representan como null: fechas ausentes/invertidas/negativas, valores negativos, NaN o Infinity, pausas inválidas, tiempo activo cero para promedios, distancia cero para ritmo y desbordamientos. Distancia cero con tiempo activo positivo da velocidad cero. Duración cero válida y duración totalmente pausada dan 0. Los helpers de conversión preservan cero y propagan null; no redondean ni formatean para UI. No se fabrican métricas estimadas. Las funciones reciben la distancia ya calculada en T12; el consumidor futuro conserva el origen medido/estimado al construir MetricValue.
+
+## Pruebas y verificación de T13
+
+31 pruebas nuevas: tests/timeAndAverages.test.ts (18) y tests/conversions.test.ts (13). Cubren total/activo, una/múltiples pausas, solapamientos, pausas abiertas, recorte, totalmente pausada, promedios con tiempo activo, distancia/tiempo cero, entradas inválidas, desbordamiento, seis conversiones, tolerancias y no mutación mediante entradas congeladas. Una prueba reutiliza el resultado de distancia T12. Sin GPS real ni navegador manual.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 133 pruebas en 12 archivos, 4.64 s; 102 previas preservadas. |
+| Build | PASS | 30 módulos, 324 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Sin dependencias nuevas, desviaciones ni bloqueos. Vitest conserva sugerencia informativa de rendimiento jsdom. README actualizado en el cierre formal con T00–T13, métricas/conversiones, testing y T14 pendiente. Documentos fuente intactos. Sin velocidad/ritmo actuales, altitud, clasificación, filtrado avanzado, UI ni lógica funcional de tracking o recuperación. Las pausas son datos de entrada; no se generan transiciones de caminata. T14 no ha comenzado.
+
+La revisión independiente de Valerio aprobó los 26 criterios de T13: tiempo total/activo, pausas, promedios con tiempo activo, unidades/conversiones, resultados null, pureza y no mutación; 133 pruebas, build, lint, TypeScript y git diff --check PASS. Confirmó los ejemplos de 1000 m en 600 s y 1609.344 m en 600 s, además de 50 combinaciones de pausas mediante un conteo independiente. Sin defectos ni bloqueos.
+
+Validación final de cierre de T13: npm test -- --run PASS (133 pruebas, 12 archivos, 4.92 s); npm run build PASS (30 módulos, 325 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T14 sin iniciar.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T12
+
+T12 ejecutada, aprobada por QA y cerrada en aad960b (feat: complete T12 distance calculation).
 
 ## Distancia implementada en T12
 
@@ -608,6 +661,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T13; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T14; Senior Developer únicamente tras esa autorización.
 
-T12 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Distancia, fórmula/unidad, exclusiones y pruebas documentadas y validadas. README actualizado en el cierre formal. T13 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T13 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Tiempo, pausas, promedios, unidades, conversiones y resultados no calculables documentados y validados. README actualizado en el cierre formal. T14 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

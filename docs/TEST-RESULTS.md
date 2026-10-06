@@ -237,3 +237,23 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Sin dependencias nuevas ni bloqueos. Distancia medida sin estimación, sin velocidad/ritmo/elevación/conversiones ni clasificación avanzada. T13 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Limitaciones y reglas de participación detalladas en CURRENT_STATE.
 
 Validación final de cierre de T12: npm test -- --run PASS (102 pruebas, 10 archivos, 4.71 s); npm run build PASS (30 módulos, 328 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T13 sin iniciar.
+
+## T13 — Tiempo, velocidad, ritmo y conversiones — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T13. Los 26 criterios fueron aprobados; sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tiempo total / activo | PASS | Milisegundos; total incluye pausas, activo excluye su unión sin mutación. |
+| Pausas | PASS | Una/múltiples, abiertas, solapadas/contiguas, recortadas, fuera de intervalo y totalmente pausada. |
+| Promedios | PASS | Distancia de T12; m/s y s/km calculados con tiempo activo. |
+| Conversiones | PASS | m→km/millas, m/s→km/h/mph, s/km→min/km/min/milla, con tolerancias. |
+| Entradas no calculables | PASS | null explícito, negativos, NaN/Infinity, cero en divisores y desbordamientos; cero válido preservado. |
+| Tests | PASS | 133 pruebas, 12 archivos, 4.64 s; 31 nuevas y 102 previas. |
+| Build | PASS | 30 módulos, 324 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; distance.ts/README/documentos fuente/UI/modelos/datos intactos. |
+
+Sin dependencias nuevas ni bloqueos. Sin velocidad/ritmo actuales, clasificación, filtrado avanzado, elevación, UI o tracking. T14 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Contratos de pausas/unidades/null documentados en CURRENT_STATE.
+
+Validación final de cierre de T13: npm test -- --run PASS (133 pruebas, 12 archivos, 4.92 s); npm run build PASS (30 módulos, 325 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T14 sin iniciar.
