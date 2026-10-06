@@ -4,9 +4,67 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T06 — Definir modelos TypeScript.
+T07 — Configurar Dexie e IndexedDB.
 
-Estado: T06 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T06`). Cierre formal autorizado por el usuario mediante el commit `feat: complete T06 TypeScript domain models`. T07 no ha comenzado.
+Estado: T07 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T07). Cierre formal autorizado por el usuario mediante el commit feat: complete T07 Dexie IndexedDB setup. T08 no ha comenzado.
+
+## Base local definida en T07
+
+`src/data/db/database.ts` define la base WalkingTracker mediante Dexie `4.4.6` y la factory tipada createDatabase. Registra explícitamente versión lógica 1 con version(1).stores(...). No abre la base al importar ni instancia conexiones globales; se abre mediante database.open() cuando el consumidor autorizado lo requiera. En T07 solo las pruebas la abren, con IndexedDB simulada. Sin imports de base de datos desde React/UI.
+
+Esquema completo v1:
+
+```ts
+{
+  walks: 'id, startedAt',
+  trackPoints: 'id, walkId',
+  activeSession: '',
+  settings: '',
+}
+```
+
+- walks: clave primaria id de Walk; startedAt como único índice secundario para consultas de historial por fecha. Registros idle con startedAt=null se almacenan, pero no participan en ese índice. Sin índice de nombre porque la búsqueda textual no necesita fijar ahora una estrategia de coincidencia.
+- trackPoints: clave primaria id de TrackPoint; walkId como único índice secundario para recuperar puntos de una caminata. La consulta probada puede ordenar sus resultados por timestamp sin crear un índice adicional todavía.
+- activeSession: clave primaria externa fija current, exportada como ACTIVE_SESSION_KEY; valores ActiveSession de T06 sin añadir campos de almacenamiento.
+- settings: clave primaria externa fija preferences, exportada como SETTINGS_KEY; valores Settings de T06. Ambas tablas singleton carecen de índices secundarios/autoincremento; put con la clave fija sustituye el registro anterior. La estrategia se expone tipada; no se crean repositories ni validadores runtime.
+- Se almacenan los objetos completos, incluyendo nulls, discriminantes, métricas y metadatos; el esquema declara claves/índices, no todas las propiedades.
+- Futura migración: añadir declaraciones de nuevas versiones conservando la v1; no hay versiones futuras ni funciones de upgrade todavía. src/data/migrations conserva su marcador vacío.
+- Dexie denomina esta versión 1 y representa internamente la versión IndexedDB nativa como 10, conforme a su convención; no es una segunda versión de aplicación.
+
+## Pruebas y verificación de T07
+
+Se añadió fake-indexeddb `6.2.5` únicamente en devDependencies, porque jsdom no proporciona por sí solo el almacenamiento IndexedDB requerido por estas pruebas. Cada prueba recibe una IDBFactory en memoria distinta mediante DexieOptions; no modifica globals ni usa datos reales del navegador. afterEach elimina la base y comprueba que no quedan bases en la factory.
+
+`tests/database.test.ts` contiene seis pruebas:
+
+1. Apertura, versión Dexie 1, cuatro tablas, claves e índices mínimos.
+2. Escritura/lectura de un objeto completo de cada tabla, incluyendo valores null.
+3. Consulta por walkId con dos puntos y exclusión de otra caminata; consulta inexistente vacía.
+4. Sustitución mediante claves fijas de sesión y ajustes, sin duplicados.
+5. Cierre/reapertura con otra instancia, conservando datos y versión.
+6. Eliminación de base, ausencia de residuos y reapertura de las cuatro tablas vacías.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Dexie, versión y tablas | PASS | Factory sin efectos de import; esquema v1 tipado con los cuatro modelos T06. |
+| Índices mínimos | PASS | Solo startedAt y walkId secundarios; claves singleton externas justificadas. |
+| Lectura/escritura, consulta, limpieza | PASS | Seis pruebas aisladas, sin datos reales. |
+| Tests | PASS | 5 archivos y 18 pruebas aprobados en 2.57 s. |
+| Build | PASS | 30 módulos, 327 ms, salida 0. |
+| Lint | PASS | Sin errores ni advertencias. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Dependencias | PASS | npm ls --depth=0 correcto; única dependencia nueva fake-indexeddb dev. Instalación: 1 paquete, 117 auditados, 0 vulnerabilidades reportadas. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm_config_cache=/tmp/walking-tracker-npm-cache npm install -D fake-indexeddb --fetch-retries=0 --fetch-timeout=15000; npm test; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; npm ls --depth=0; git diff --check; git status --short --branch --untracked-files=all.
+
+Hallazgos: el intento restringido de descarga falló por EAI_AGAIN; el reintento autorizado fue correcto. Sin bloqueos ni desviaciones arquitectónicas. La relación Walk/TrackPoint es lógica, no una foreign key impuesta por IndexedDB. Las pruebas simuladas no validan cuotas, políticas de Safari ni durabilidad física; eso corresponde a etapas posteriores. Sin CRUD de aplicación, repositories, tracking, métricas, recuperación o cambios de UI. Modelos T06 y documentos principales intactos. Se retira src/data/db/.gitkeep porque ahora contiene la definición. README y estado de AGENTS actualizados durante el cierre autorizado: T00–T07 completadas, base v1, tablas/índices, testing y T08 pendiente.
+
+Valerio aprobó independientemente los 22 criterios de T07, sin defectos: esquema Dexie v1, tablas e índices mínimos, tipos T06, ausencia de T08, aislamiento/limpieza, dependencia dev justificada, coherencia del lockfile y validaciones técnicas. Ejecutó además un flujo independiente en memoria con Walk, varios TrackPoint, consulta por walkId, ActiveSession y Settings, seguido de eliminación sin residuos. El cierre incorpora una última ejecución de tests, build, lint, TypeScript forzado y git diff --check, seguida de commit autorizado y comprobación de git status y git log -1 --oneline.
+
+## Historial de T06
+
+T06 ejecutada, aprobada por QA (Valerio: PASS — READY TO CLOSE T06) y cerrada en 440ef8f (feat: complete T06 TypeScript domain models). Durante T06 solo se definieron tipos; la base se incorpora posteriormente en T07.
 
 ## Modelos definidos en T06
 
@@ -320,4 +378,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
 
-T06 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Modelos, estados y nulabilidad documentados; tests, build, lint y TypeScript validados. README actualizado conforme a la regla permanente. T07 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T07 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Dexie/IndexedDB v1, tablas e índices documentados; lectura/escritura, consulta walkId y limpieza validadas. README actualizado conforme a la regla permanente. T08 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

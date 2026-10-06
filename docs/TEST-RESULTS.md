@@ -123,3 +123,22 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 | Integridad / whitespace | PASS | Fuentes UI/rutas, dependencias, README y documentos principales intactos; `git diff --check` aprobado. |
 
 ExpectTypeOf valida durante compilación; el resultado Vitest por sí solo no demuestra tipado. No se implementan cálculos, validadores runtime, filtros, persistencia ni recuperación. Sin dependencias nuevas, desviaciones ni bloqueos. T07 no ha comenzado; cambios incluidos en el commit autorizado de cierre, con README y estado de AGENTS actualizados.
+
+## T07 — Configurar Dexie e IndexedDB — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T07. Los 22 criterios revisados pasaron, sin defectos; flujo adicional de QA en memoria aprobado y limpiado sin residuos. Cierre autorizado por el usuario.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Apertura y esquema versionado | PASS | Dexie v1, cuatro tablas, claves e índices esperados. |
+| Lectura/escritura | PASS | Roundtrip de Walk, TrackPoint, ActiveSession y Settings completos. |
+| Relación lógica walkId | PASS | Recupera dos puntos del walk correcto, excluye otro y retorna vacío para id inexistente. |
+| Singletons | PASS | Claves externas fijas sustituyen registros sin duplicarlos. |
+| Reapertura / limpieza | PASS | Datos sobreviven cierre; delete deja factory sin bases; nueva apertura vacía. |
+| Aislamiento | PASS | IDBFactory distinta por prueba; sin datos reales ni globals compartidos; teardown comprobado. |
+| Tests | PASS | 18 pruebas, 5 archivos, 2.57 s; 6 pruebas nuevas de base. |
+| Build | PASS | 30 módulos, 327 ms. |
+| Lint / TypeScript | PASS | Lint sin advertencias y tsc -b --force sin errores. |
+| Integridad / whitespace | PASS | UI/modelos/README/documentos principales intactos; git diff --check aprobado. |
+
+fake-indexeddb 6.2.5 añadido solo como devDependency para simular IndexedDB. Sin repositories ni CRUD de aplicación; T08 no ha comenzado. Esquema y limitaciones detallados en CURRENT_STATE. Sin bloqueos; cambios incluidos en el commit autorizado de cierre, con README y estado de AGENTS actualizados.

@@ -4,18 +4,18 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T06 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura aprobada, el testing y la navegación SPA están operativos; los modelos TypeScript base están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T07 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T07 — Configurar Dexie e IndexedDB**. No ha comenzado y requiere autorización del usuario. Dexie está instalado, pero todavía no existe persistencia IndexedDB/Dexie funcional, esquema de base de datos ni repositories. Tampoco hay tracking GPS, cálculos de métricas, mapas, gráficos o historial/configuración funcional.
+La siguiente tarea pendiente es **T08 — Crear repositories**. No ha comenzado y requiere autorización del usuario. La base local está configurada y su lectura/escritura probada de forma aislada, pero todavía no existen repositories, CRUD funcional de aplicación ni acceso a datos desde la UI. Tampoco hay tracking GPS, cálculos de métricas, mapas, gráficos o historial/configuración funcional.
 
-Estado del repositorio tras T06: router y layout en `src/app/`, cinco páginas base, tipos independientes en `src/types/` y doce pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T07: router/layout, cinco páginas base, tipos independientes, definición de base local en `src/data/db/database.ts` y dieciocho pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
 - Entorno: Node.js `24.21.0` mediante NVM y npm `11.19.0`.
 - Base operativa: React / React DOM `19.3.0`, TypeScript `6.0.3` y Vite `8.3.2` con plugin React.
-- Dependencias runtime: React Router DOM `7.18.4` integrado para navegación; Leaflet `1.9.4`, Dexie `4.4.6` y Chart.js `4.5.1` instalados, sin integración funcional todavía.
-- Testing disponible: Vitest `5.0.3`, React Testing Library `16.3.3`, jest-dom `7.0.1` y jsdom `30.1.2`. Pruebas React en jsdom y prueba de función TypeScript en Node.
+- Dependencias runtime: React Router DOM `7.18.4` integrado para navegación y Dexie `4.4.6` configurado para IndexedDB; Leaflet `1.9.4` y Chart.js `4.5.1` instalados, sin integración funcional todavía.
+- Testing disponible: Vitest `5.0.3`, React Testing Library `16.3.3`, jest-dom `7.0.1`, jsdom `30.1.2` y fake-indexeddb `6.2.5` (solo dev). Las pruebas de base usan IndexedDB en memoria aislada, sin datos reales del navegador.
 - Tooling: Oxlint y tipos de Node, React y Leaflet. Versiones exactas y transitivas registradas en `package-lock.json`.
 
 ## Estructura actual
@@ -23,7 +23,8 @@ Estado del repositorio tras T06: router y layout en `src/app/`, cinco páginas b
 - `docs/`: requisitos, decisiones, arquitectura, plan de implementación, estado y evidencias de validación.
 - `src/`: estructura aprobada, router/layout compartido, páginas placeholder, entrada React y CSS móvil simple.
 - `src/types/`: modelos y estados sin implementación runtime, independientes de React y persistencia.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación y comprobaciones de tipos.
+- `src/data/db/`: factory Dexie y esquema v1, sin apertura automática ni conexión desde React.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -48,7 +49,7 @@ src/
 │   ├── visibility/
 │   └── wakeLock/
 ├── data/
-│   ├── db/
+│   ├── db/database.ts
 │   ├── repositories/
 │   └── migrations/
 ├── domain/
@@ -71,7 +72,24 @@ src/
 └── index.css
 ```
 
-Las 15 carpetas finales todavía vacías contienen `.gitkeep`; se retiró también el marcador de types al definir modelos. No hay servicios funcionales.
+Las 14 carpetas finales todavía vacías contienen `.gitkeep`; se retiró el marcador de db al definir la base. Repositories, migraciones futuras y servicios funcionales siguen pendientes.
+
+## Persistencia local configurada
+
+La factory createDatabase define WalkingTracker mediante Dexie, reutilizando Walk, TrackPoint, ActiveSession y Settings. No abre conexiones al importar; la aplicación todavía no la consume.
+
+Esquema versión 1:
+
+| Tabla | Clave primaria | Índices secundarios |
+|---|---|---|
+| walks | id | startedAt |
+| trackPoints | id | walkId |
+| activeSession | Externa fija: current | Ninguno |
+| settings | Externa fija: preferences | Ninguno |
+
+startedAt permite consultas por fecha y walkId recupera puntos de una caminata. Las claves externas de sesión/ajustes evitan añadir campos a los modelos. Los registros se almacenan completos. Dexie usa versión lógica 1 y versión nativa IndexedDB 10 según su convención; no hay migraciones futuras todavía.
+
+Las seis pruebas de base validan apertura/esquema, lectura/escritura de las cuatro tablas, consulta por walkId, sustitución con claves fijas, reapertura y limpieza sin residuos. No hay repositories ni CRUD de aplicación; tampoco guardado periódico o recuperación funcional.
 
 ## Modelos TypeScript definidos
 
@@ -127,11 +145,12 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta doce pruebas/comprobaciones en cuatro archivos: bootstrap, navegación y modelos; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta dieciocho pruebas/comprobaciones en cinco archivos: bootstrap, navegación, modelos y base local; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
-- Las páginas contienen placeholders; aún no hay funcionalidades de caminatas ni persistencia IndexedDB/Dexie. Las pruebas actuales cubren bootstrap, navegación y contratos de tipos.
+- Las páginas contienen placeholders; aún no hay funcionalidades de caminatas, repositories ni CRUD de aplicación. La base local está definida y probada, sin integración con la UI.
+- Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
 - readonly no congela objetos en runtime; rangos, invariantes temporales, filtros, métricas y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.
 - El tracking confiable del MVP requerirá página visible y activa; no se garantiza con pantalla bloqueada ni navegador en segundo plano.
