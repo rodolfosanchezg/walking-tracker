@@ -4,9 +4,75 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T13 — Implementar tiempo, velocidad y ritmo.
+T14 — Calidad GPS y detección de anomalías.
 
-Estado: T13 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T13). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T13 time speed and pace metrics. T14 no ha comenzado.
+Estado: T14 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T14). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T14 GPS quality classification. T15 no ha comenzado.
+
+## Clasificación GPS implementada en T14
+
+src/domain/filtering/gpsQuality.ts implementa lógica pura y determinística. Reutiliza Haversine de T12, sin modificar métricas T12/T13 ni modelos T06. No elimina puntos ni devuelve una ruta filtrada; entrega la clasificación por separado de los datos originales. Sin React, Dexie, repositories, browser, persistencia, UI o integración con Geolocation Service.
+
+API pública:
+
+- GpsQualityConfig / DEFAULT_GPS_QUALITY_CONFIG: configuración centralizada, readonly y defaults congelados.
+- evaluateAccuracy(accuracy, config?): valid | low-quality. Accuracy no finita, negativa o ausente queda low-quality; no basta para anomalía.
+- classifyTrackPoint(point, previous?, config?): GpsAssessment. Incluye referencia original point, quality, signals, distanceMeters, intervalMs y apparentSpeedMetersPerSecond. No modifica ningún campo del punto original.
+- classifyTrackPoints(points, config?): GpsAssessment[]. Conserva todos los puntos y orden. Mantiene como referencia previa relevante el último punto clasificado valid/suspicious con coordenadas seguras y timestamp creciente; low-quality/anomalous/estimated no desplazan esa referencia. No compara entre walkId distintos.
+
+Umbrales iniciales autorizados explícitamente para T14, configurables y sujetos a pruebas reales:
+
+| Parámetro | Valor | Justificación |
+|---|---|---|
+| acceptableAccuracyMeters | 25 m | Tolerancia inicial generosa para caminata; mayor precisión reportada degrada calidad, no descarta el dato. |
+| maximumWalkingSpeedMetersPerSecond | 5 m/s | Límite conservador alto (18 km/h), para no tratar caminar rápido como anomalía por sí solo. |
+| maximumJumpMeters | 100 m | Identifica saltos grandes, con corroboración adicional. |
+| maximumJumpIntervalMs | 30000 ms | Salto espacial solo dentro de ventana corta; desplazamiento largo con intervalo largo puede ser normal. |
+| minimumIntervalMs | 1000 ms | Evita inferir velocidad sobre intervalos demasiado breves. |
+| anomalyEvidenceCount | 2 | Se requieren al menos dos evidencias y corroboración espacial/temporal. Puede aumentarse; nunca reducirse a una. |
+
+Las comparaciones de accuracy/velocidad/salto son estrictamente mayores al umbral; igualdad aceptada. Intervalo mínimo inclusivo para calcular velocidad; ventana máxima de salto inclusiva. Configuración inválida (no finita/no positiva, cantidad no entera o menor a dos, ventana máxima menor al intervalo mínimo) lanza RangeError para señalar error de configuración, no clasificar datos GPS.
+
+Señales: poor-accuracy, invalid-accuracy, invalid-coordinates, invalid-timestamp, non-increasing-time, short-interval, excessive-apparent-speed, spatial-jump, excessive-device-speed, invalid-device-speed. Distancia e intervalo inseguros se entregan como null; no se inventa velocidad.
+
+Reglas:
+
+- valid: accuracy aceptable, sin señales sospechosas.
+- low-quality: accuracy pobre/invalidada, sin otras señales sospechosas; dato conservado para evaluación posterior (D1).
+- suspicious: señal aislada de movimiento/tiempo, datos inválidos o speed reportada excesiva, sin suficientes evidencias corroboradas; D2 mantiene utilizable lo sospechoso no claramente inválido.
+- anomalous: al menos anomalyEvidenceCount entre poor-accuracy, excessive-apparent-speed, spatial-jump, non-increasing-time y excessive-device-speed, incluyendo al menos una señal espacial/temporal. Accuracy y speed reportada juntas no bastan sin corroboración espacial/temporal.
+- estimated: solo se conserva cuando el punto de entrada ya es estimated; no se genera ni asigna a puntos observados.
+
+Timestamps iguales/invertidos generan non-increasing-time, sin división; aislados son suspicious. Timestamp no finito/negativo genera diagnóstico invalid-timestamp y comparación temporal null. Intervalos positivos menores al mínimo generan short-interval, sin velocidad aparente. Datos faltantes/invalidados no cuentan por sí solos como evidencia de anomalía; una combinación de evidencias explícitas sí puede producirla.
+
+Speed null es ausencia permitida. Speed negativa/no finita produce diagnóstico, no anomalía automática. Speed medida por encima del máximo aporta evidencia complementaria; no sustituye velocidad aparente ni determina sola anomalous. Los valores originales, incluidos null/NaN, se preservan. Altitud no se evalúa.
+
+Limitación: velocidad aparente y salto se derivan del mismo desplazamiento y pueden estar correlacionados. La regla inicial es explicable y configurable, no una calibración validada en iPhone. No detecta movimiento real con certeza ni define políticas de UI o filtrado definitivo.
+
+## Pruebas y verificación de T14
+
+31 pruebas en tests/gpsQuality.test.ts: punto inicial, accuracy/fronteras/invalidada, movimiento normal, salto imposible, intervalo largo coherente, velocidad aislada, timestamps iguales/invertidos/invalidos, intervalos mínimos, speed ausente/cero/frontera/inválida/complementaria, repetidos, coordenadas negativas e inválidas, estimated reservado, secuencia mixta, anomalías consecutivas, referencia relevante, entradas congeladas, determinismo, compatibilidad T12, configuración y fronteras de salto/velocidad/ventana.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 164 pruebas en 13 archivos, 5.82 s; 133 previas preservadas. |
+| Build | PASS | 30 módulos, 286 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Hallazgo corregido durante desarrollo: primera ejecución tuvo tres fallos por un paréntesis incorrecto en una aserción parametrizada; corregido y suite completa PASS. Vitest mantiene sugerencia informativa de rendimiento jsdom. Sin dependencias nuevas, desviaciones ni bloqueos. Se retira .gitkeep de filtering al crear fuentes. Umbrales iniciales establecidos bajo autorización de T14 sin modificar DECISIONS. README actualizado en el cierre formal con T00–T14, clasificación GPS, señales/umbrales, testing y T15 pendiente. Documentos fuente intactos. Sin T15, altitud, filtrado definitivo, métricas adicionales, UI, mapas, tracking, persistencia o integración con servicios. T15 no ha comenzado.
+
+La revisión independiente de Valerio aprobó los 31 criterios de T14: estados diferenciados y estimated reservado, múltiples señales, umbrales ajustables/fronteras, timestamps/speed, pureza y no mutación, reutilización T12, alcance y documentación. 164 pruebas, build, lint, TypeScript y git diff --check PASS. Sus escenarios independientes confirmaron movimiento normal, accuracy pobre aislada, sospecha aislada, salto/velocidad corroborados, tiempo invertido, fronteras y determinismo. Sin defectos ni bloqueos.
+
+Validación final de cierre de T14: npm test -- --run PASS (164 pruebas, 13 archivos, 4.62 s); npm run build PASS (30 módulos, 330 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificó src/domain/elevation: solo .gitkeep, sin implementación de T15.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T13
+
+T13 ejecutada, aprobada por QA y cerrada en ec55c3e (feat: complete T13 time speed and pace metrics).
 
 ## Métricas y conversiones implementadas en T13
 
@@ -661,6 +727,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T14; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T15; Senior Developer únicamente tras esa autorización.
 
-T13 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Tiempo, pausas, promedios, unidades, conversiones y resultados no calculables documentados y validados. README actualizado en el cierre formal. T14 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T14 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Clasificación, señales, umbrales, timestamps/speed y pruebas documentados y validados. README actualizado en el cierre formal. T15 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

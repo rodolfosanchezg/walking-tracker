@@ -257,3 +257,22 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Sin dependencias nuevas ni bloqueos. Sin velocidad/ritmo actuales, clasificación, filtrado avanzado, elevación, UI o tracking. T14 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Contratos de pausas/unidades/null documentados en CURRENT_STATE.
 
 Validación final de cierre de T13: npm test -- --run PASS (133 pruebas, 12 archivos, 4.92 s); npm run build PASS (30 módulos, 325 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T14 sin iniciar.
+
+## T14 — Calidad GPS y detección de anomalías — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T14. Los 31 criterios fueron aprobados; sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Calidad / señales | PASS | Accuracy, velocidad aparente, salto, coherencia temporal y speed complementaria; clasificación separada. |
+| Umbrales | PASS | Centralizados/configurables, fronteras probadas y valores iniciales documentados bajo autorización T14. |
+| Reglas diferenciadas | PASS | Accuracy sola low-quality; señal aislada suspicious; evidencias múltiples con corroboración anomalous; estimated reservado. |
+| Pureza / no mutación | PASS | Originales congelados, determinismo, secuencia conserva todos los puntos; Haversine T12 reutilizado. |
+| Tests | PASS | 164 pruebas, 13 archivos, 5.82 s; 31 nuevas y 133 previas. |
+| Build | PASS | 30 módulos, 286 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; métricas/modelos/UI/README/documentos fuente intactos. |
+
+Primera ejecución: tres fallos por aserción con paréntesis incorrecto; corregido y suite completa PASS. Sin dependencias nuevas ni bloqueos. Umbrales requieren calibración real; correlación entre salto y velocidad documentada. Sin altitud, rutas filtradas, tracking, UI o persistencia. T15 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
+
+Validación final de cierre de T14: npm test -- --run PASS (164 pruebas, 13 archivos, 4.62 s); npm run build PASS (30 módulos, 330 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificó src/domain/elevation: solo .gitkeep, sin implementación de T15.
