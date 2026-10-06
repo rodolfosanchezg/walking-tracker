@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T16 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T17 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. Las cinco vistas siguen siendo placeholders.
 
-La siguiente tarea pendiente es **T17 — Orquestador de tracking**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Tiempo total/activo, velocidad promedio, ritmo promedio y conversiones están implementados; clasificación GPS y detección de anomalías están implementadas como dominio puro; procesamiento de altitud implementado como dominio puro; mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T18 — Persistencia por bloques**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; todavía no conecta UI ni persistencia automática.
 
-Estado del repositorio tras T16: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más distancia, tiempo, promedios, conversiones, clasificación GPS, elevación, estado de sesión y 223 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T17: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16 y orquestador T17; 246 pruebas/comprobaciones en 16 archivos. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
 
 ## Stack y dependencias instaladas
 
@@ -32,6 +32,7 @@ Estado del repositorio tras T16: router/layout, cinco páginas base, tipos indep
 - `src/domain/filtering/gpsQuality.ts`: clasificación GPS y señales de anomalía, con umbrales configurables.
 - `src/domain/elevation/elevation.ts`: preparación, suavizado, interpolación, ganancia/pérdida y perfil distancia-altitud.
 - `src/features/tracking/session.ts`: estado local y transiciones puras de caminata, con pausas e incompletitud.
+- `src/features/tracking/trackingController.ts`: orquestador independiente de React, con GPS y métricas en memoria.
 - `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones, calidad GPS, elevación y estado de sesión.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
@@ -48,7 +49,8 @@ src/
 ├── features/
 │   ├── tracking/
 │   │   ├── ActiveWalkPage.tsx
-│   │   └── session.ts
+│   │   ├── session.ts
+│   │   └── trackingController.ts
 │   ├── history/
 │   │   ├── HistoryPage.tsx
 │   │   └── WalkDetailPage.tsx
@@ -93,7 +95,7 @@ src/
 └── index.css
 ```
 
-Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Orquestador de tracking, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
+Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Persistencia automática por bloques, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -129,7 +131,7 @@ createGeolocationService encapsula navigator.geolocation.watchPosition y clearWa
 
 RawPosition conserva latitude, longitude, altitude, accuracy, speed y timestamp, incluidos nulls en altitud/velocidad y valores cero. No asigna walkId, identidad, calidad definitiva ni estimaciones. Los errores se normalizan como permission-denied, position-unavailable y timeout; también contempla unknown y unsupported, sin mensajes de UI.
 
-Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. Todavía no existe tracking funcional integrado con UI/persistencia, integración con métricas ni con Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
+Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. T17 integra el servicio con sesión y métricas en memoria; todavía no existe integración con UI/persistencia ni con Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
 
 ## Servicio de Page Visibility disponible
 
@@ -167,7 +169,7 @@ averages.ts calcula velocidad promedio en m/s como distancia en metros / segundo
 
 conversions.ts ofrece metros→kilómetros/millas, m/s→km/h/mph y segundos/km→min/km/min/milla, utilizando la milla internacional de 1609.344 m. No agrega selección de unidades ni formato UI.
 
-Los datos inválidos o métricas no calculables devuelven null, incluidos NaN, Infinity, negativos, divisores cero y desbordamientos. Distancia cero con tiempo activo positivo da velocidad cero; ritmo sin distancia da null. Duraciones cero válidas se conservan. Velocidad/ritmo actuales y tracking integrado siguen pendientes.
+Los datos inválidos o métricas no calculables devuelven null, incluidos NaN, Infinity, negativos, divisores cero y desbordamientos. Distancia cero con tiempo activo positivo da velocidad cero; ritmo sin distancia da null. Duraciones cero válidas se conservan. Velocidad/ritmo actuales siguen pendientes; T17 integra los promedios en memoria.
 
 ## Clasificación GPS y anomalías implementadas
 
@@ -177,7 +179,7 @@ Combina accuracy, velocidad aparente, salto espacial y coherencia temporal. Trac
 
 DEFAULT_GPS_QUALITY_CONFIG centraliza parámetros iniciales ajustables: accuracy 25 m, velocidad 5 m/s, salto 100 m dentro de 30 s, intervalo mínimo 1 s y al menos dos evidencias para anomalía. Timestamps iguales/invertidos se diagnostican sin dividir; no finitos y speed inválida se manejan sin inventar valores derivados. Los umbrales requieren calibración real y salto/velocidad pueden estar correlacionados.
 
-La clasificación GPS aún no está integrada en un flujo funcional de tracking ni define filtrado definitivo de rutas, persistencia o UI. El procesamiento de altitud se incorpora en T15 sin modificar las clasificaciones GPS.
+T17 integra la clasificación GPS en el controlador en memoria; no define filtrado definitivo de rutas, persistencia o UI. El procesamiento de altitud se incorpora en T15 sin modificar las clasificaciones GPS.
 
 ## Procesamiento de altitud implementado
 
@@ -189,7 +191,7 @@ Altitudes finitas de puntos valid/suspicious participan. low-quality, anomalous 
 
 El perfil distancia-altitud reutiliza distancia T12 e incluye pointId, walkId, timestamp, distanceMeters, altitudeMeters, source, estimated y smoothed. Chart.js aún no está integrado al perfil. Los parámetros están centralizados y requieren calibración real; el detector puede confundir un pico real aislado.
 
-Todavía no existe una sesión funcional completa de tracking ni integración de estos módulos con UI/persistencia. T17 permanece pendiente.
+T17 integra estos módulos en memoria; todavía no existe una sesión completa con UI/persistencia.
 
 ## Estado de sesión implementado
 
@@ -199,7 +201,17 @@ Las transiciones son puras y reciben timestamps explícitos. Pausar abre un inte
 
 Incomplete conserva identidad e inicio original, registra la interrupción y permite continuar o finalizar manteniendo isIncomplete. Una interrupción desde active sigue contando como tiempo activo, identificada por separado; desde paused mantiene la pausa abierta. Eso no implica GPS observado ni distancia medida.
 
-El snapshot es compatible con ActiveSessionRepository sin efectuar escrituras. No serializa el historial completo de pausas/interrupciones; persistencia y reconstrucción desde almacenamiento siguen pendientes. Todavía no existe el orquestador funcional que conecte sesión, GPS, métricas y persistencia. T16 por sí sola no inicia geolocalización ni tracking real.
+El snapshot es compatible con ActiveSessionRepository sin efectuar escrituras. No serializa el historial completo de pausas/interrupciones; persistencia y reconstrucción desde almacenamiento siguen pendientes. T17 conecta sesión, GPS y métricas en memoria; la persistencia automática sigue pendiente. T16 por sí sola no inicia geolocalización ni tracking real.
+
+## Orquestador de tracking implementado — T17
+
+createTrackingController({ geolocation?, now? }) ofrece start, pause, resume, refresh, finish, cancel, stop/cleanup y getSnapshot. Puede iniciar una caminata, recibir GPS mediante T09, clasificar puntos con T14, preservar raw GPS y calcular métricas T12–T15 en memoria. Controla un único watcher por instancia y rechaza doble start.
+
+Durante pausa conserva la observación GPS y los puntos raw, pero excluye esos puntos de ruta y métricas activas. Resume abre un segmento nuevo sin duplicar watcher ni unir desplazamientos de pausa. Anomalous se conserva raw y se excluye de distancia/elevación. Los promedios usan tiempo activo y los errores GPS normalizados son observables en el snapshot.
+
+Finish libera el watcher; cleanup es idempotente e intenta liberar recursos incluso cuando la transición de dominio devuelve regressive-time o invalid-timestamp. El error permanece observable y el estado temporal previo se conserva, con watcher inactivo después de una liberación exitosa. QA-T17-001 quedó RESOLVED tras segunda validación PASS; una falla nativa de detención sigue devolviendo geolocation-stop-failed explícitamente.
+
+El controlador no persiste, no usa React ni modifica UI. No hay persistencia por bloques, flush temporal/por cantidad, recuperación persistida, Active Walk UI funcional, Leaflet/Chart.js en tracking activo ni integración funcional con Page Visibility/Wake Lock. Consultar el snapshot no avanza el reloj; se utiliza refresh explícito.
 
 ## Modelos TypeScript definidos
 
@@ -255,11 +267,11 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 223 pruebas/comprobaciones en quince archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación y estado de sesión; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 246 pruebas/comprobaciones en dieciséis archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación, estado de sesión y orquestador (incluida la regresión QA-T17-001); para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
-- Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. El servicio de geolocalización está probado con mocks, sin tracking funcional integrado con UI/persistencia ni flujos de caminatas.
+- Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. El servicio de geolocalización está probado con mocks, con flujo de caminata en memoria mediante T17, sin integración con UI/persistencia automática.
 - Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
 - readonly no congela objetos en runtime; validaciones de dominio adicionales, filtrado definitivo de rutas, estimación de tracking y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.

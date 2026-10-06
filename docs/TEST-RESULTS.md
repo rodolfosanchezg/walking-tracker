@@ -315,3 +315,54 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Sin dependencias nuevas ni bloqueos. Sin orquestador, GPS/Wake Lock/Visibility, persistencia automática ni recuperación de almacenamiento. Snapshot compatible sin historial completo; integración T18/T26 pendiente. T17 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
 
 Validación final de cierre de T16: npm test -- --run PASS (223 pruebas, 15 archivos, 5.34 s); npm run build PASS (30 módulos, 341 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos. Antes del commit se verificó tracking: solo session.ts puro y página placeholder; imports limitados a tipos y tiempo T13, sin orquestador ni integración T17.
+
+## T17 — Orquestador de tracking — 2026-10-06
+
+Verificación inicial del Senior Developer, previa al hallazgo independiente QA-T17-001. Se conserva como evidencia histórica; no equivale a aprobación de QA.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Flujo / watcher | PASS | Sesión T16, watcher T09 único, pausa/reanudación sin duplicación, finish/cancel/cleanup. |
+| Raw / T14 | PASS | Campos preservados; clasificaciones integradas y anomalous conservado/excluido de métricas. |
+| Métricas / pausas | PASS | T12/T13/T15 reutilizados por segmento; posiciones y desplazamientos de pausa no suman distancia/elevación activa. |
+| Errores / snapshots | PASS | Errores GPS normalizados, startup false/síncrono/unsupported, permission denied detiene; snapshots protegidos y callbacks tardíos ignorados. |
+| Tests | PASS | 244 pruebas, 16 archivos, 5.71 s; 21 nuevas con servicio T09/mocks y 223 previas. |
+| Build | PASS | 30 módulos, 353 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; módulos anteriores/UI/README/documentos fuente intactos. |
+
+Sin dependencias nuevas, persistencia automática/React ni integraciones T27/T28. Alcance específico del usuario prevalece sobre buffer/React mencionados por el plan; documentado en CURRENT_STATE. Sin current speed/pace, UI, mapas o gráficos. Rendimiento de recalculación y GPS real pendientes. T18 no ha comenzado; sin commit final.
+
+
+## T17 — QA-T17-001: FAIL → corrección → revalidación pendiente — 2026-10-06
+
+QA independiente: FAIL — CORRECTIONS REQUIRED. QA-T17-001, severidad/prioridad altas: el retorno anticipado ante regressive-time en stop/cleanup impedía liberar el watcher. Reproducción original: start(1000), refresh(11000), reloj=5000, cleanup; error regressive-time, watcherActive=true, clearWatch=0. La suite inicial de 244 pruebas no cubría este caso.
+
+Corrección de desarrollo: stop/cleanup siempre intenta liberar el watcher antes de devolver el error de dominio. Tras liberación correcta, watcherActive=false; la transición rechazada conserva el estado temporal previo. Cleanup repetido sin watcher no reintenta transiciones temporales. No se modificaron finish/cancel ni otros módulos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Regresión exacta QA-T17-001 | PASS | Error regressive-time preservado; clearWatch(0) una vez; watcherActive=false; segundo cleanup exitoso; callback tardío descartado. |
+| Timestamp inválido desde paused | PASS | cleanup(NaN) conserva invalid-timestamp y libera watcher; repetición segura. |
+| Reproducción independiente en memoria | PASS | start 1000 → refresh 11000 → reloj 5000 → cleanup; mismas garantías, cero puntos tardíos. Primer harness corregido por firma de inyección T09 incorrecta, sin cambios de producto. |
+| Tests | PASS | 246 pruebas en 16 archivos, 6.06 s; 2 regresiones nuevas. |
+| Build | PASS | 30 módulos, 294 ms, salida 0. |
+| Lint | PASS | npm run lint, salida 0. |
+| TypeScript | PASS | tsc -b --force, salida 0. |
+| Whitespace | PASS | git diff --check, salida 0. |
+| Revalidación independiente de QA | PENDING | Corrección lista para re-revisión; no se declara T17 aprobada ni cerrada. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Reproducción adicional: node --input-type=module con mocks, transpilación en memoria y aserciones. Node 24.21.0 / npm 11.19.0.
+
+README y documentos fuente intactos; sin dependencias nuevas, commit o implementación de T18. T17 permanece abierta.
+
+
+## T17 — Revalidación independiente y cierre formal — 2026-10-06
+
+Secuencia conservada: primera validación FAIL → QA-T17-001 — Cleanup condicionado por un timestamp regresivo → corrección de Aurelio y pruebas de regresión → segunda validación de Valerio PASS — READY TO CLOSE T17. La sección anterior registra la fase previa de revalidación pendiente, ahora completada. QA-T17-001: RESOLVED; defecto cerrado, evidencia histórica preservada.
+
+Valerio reprodujo start(1000), refresh a 11000, reloj=5000 y cleanup: regressive-time observable; clearWatch(0) una vez; watcherActive=false; cero observaciones activas; segundo cleanup exitoso con sesión intacta y callback tardío descartado. Regresión completa de T17 PASS, sin defectos nuevos. 246 pruebas en 16 archivos (6.59 s), build (414 ms), lint, TypeScript y git diff --check PASS.
+
+Cierre formal autorizado por el usuario; README y CURRENT_STATE actualizados. Sin implementación de T18, cambios a documentos fuente ni nuevas dependencias.
+
+Validación final de cierre de T17: Node 24.21.0 / npm 11.19.0; npm test -- --run PASS (246 pruebas, 16 archivos, 6.18 s), incluida QA-T17-001 y timestamp inválido desde paused; npm run build PASS (30 módulos, 320 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se verificó que el controlador solo importa T09, sesión T16, tipos y dominio T12–T15; sin repositories, IndexedDB, buffers/flush, UI, Visibility o Wake Lock. T18 no ha comenzado. El cierre incluye git status y git log -1 --oneline después del commit.

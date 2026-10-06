@@ -4,9 +4,85 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T16 — Estado de sesión de caminata.
+T17 — Orquestador de tracking.
 
-Estado: T16 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T16). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T16 walk session state. T17 no ha comenzado.
+Estado: T17 CLOSED; cierre formal autorizado tras segunda validación de Valerio PASS — READY TO CLOSE T17. QA-T17-001 RESOLVED. T18 no ha comenzado.
+
+## Orquestador implementado en T17
+
+src/features/tracking/trackingController.ts define createTrackingController({ geolocation?, now? }). Controlador en memoria independiente de React y UI. Utiliza un servicio T09 exclusivo por instancia (por defecto createGeolocationService) y reloj inyectable (por defecto Date.now). Reutiliza sesión T16, clasificación T14 y métricas T12/T13/T15. No accede directamente a navigator ni IndexedDB.
+
+API pública:
+
+- getSnapshot(): TrackingSnapshot, sin suscripciones ni listeners propios de UI.
+- start(walkId, name?, timestamp = now()): TrackingResult. Crea/inicia sesión T16 y un único watcher T09; doble inicio rechazado mientras la sesión siga en curso. Permite iniciar otra caminata después de finish o cancel.
+- pause/resume/refresh/finish(timestamp = now()): TrackingResult. Reutilizan transiciones T16 y sus errores.
+- cancel(): TrackingResult. Detiene watcher y descarta sesión/puntos en memoria, sin borrar bases.
+- stop/cleanup(timestamp = now()): TrackingResult. Intentan marcar incomplete si existe watcher activo y la sesión estaba active/paused; siempre intentan detener el watcher, incluso si la transición falla. Conservan el error temporal y el estado de sesión previo cuando la transición es inválida; no inventan timestamps. Tras liberar el watcher, cleanup repetido no intenta otra transición temporal. Conservan datos para revisión local y son independientes del binding this.
+
+TrackingResult: ok true/value snapshot o ok false/error kind/message. Errores de transición/tiempo T16 se propagan; además already-started, no-session, geolocation-start-failed y geolocation-stop-failed. Datos/errores GPS normalizados se exponen en snapshot sin mensajes UI.
+
+Snapshot:
+
+- session: copia protegida de WalkSession o null.
+- rawPoints: CapturedPoint[] con raw TrackPoint (identidad asignada, todos los campos originales), assessment T14 separado y segment (null si no participa de ruta).
+- points: puntos activos derivados con quality clasificada, incluidos anomalous, sin alterar campos GPS originales.
+- metrics: distanceMeters, activeDurationMs, totalDurationMs, averageSpeedMetersPerSecond, averagePaceSecondsPerKilometer, elevationGainMeters y elevationLossMeters. Métricas de distancia/promedios/elevación reutilizan MetricValue para null y procedencia estimada.
+- watcherActive, gpsStatus idle/waiting/available/error, gpsError normalizado o null y trackingStatus idle/active/paused/incomplete/finished/cancelled.
+
+Snapshots, arrays, puntos, evaluaciones/señales, métricas y estado/intervalos expuestos están congelados/copiados para evitar mutación de memoria interna por el consumidor. IDs de puntos son walkId:contador monotónico por controlador; walkId único lo proporciona el consumidor. No se resuelven IDs persistidos ni reconstrucción de otra instancia en T17.
+
+Flujo:
+
+1. Start valida sesión y timestamp, pasa active y solicita T09.start. Si el servicio devuelve false, no existe soporte o lanza excepción síncrona, expone error explícito y conserva sesión incomplete con watcher detenido.
+2. Posiciones T09 se copian y asocian al walkId sin modificar latitude/longitude/altitude/accuracy/speed/timestamp. Se clasifican con T14; no se generan estimaciones ni redefinen umbrales.
+3. Durante active se incorporan al segmento actual las posiciones con timestamp finito y no anterior al inicio de segmento. Posiciones antiguas/no finitas se conservan raw con segment null; no crean ruta activa. Reloj del controlador actualiza tiempos T16 sin usar el timestamp GPS como reloj de sesión.
+4. Pause conserva el watcher para conciencia GPS. Sus posiciones también se conservan raw con evaluación, pero segment null: no participan de ruta, distancia o elevación. Tiempo activo permanece detenido y total sigue transcurriendo.
+5. Resume cierra pausa T16 y abre segmento nuevo sin reiniciar watcher. No se unen coordenadas/altitudes antes y después de la pausa, evitando distancia/elevación artificial por desplazamientos pausados.
+6. Finish cierra sesión/pausa, detiene watcher, invalida callbacks antiguos y devuelve snapshot final sin persistir.
+
+Clasificación y métricas: cada segmento activo se clasifica por T14, manteniendo sus reglas de referencia relevante. Los raw anomalous se conservan, pero T12/T15 los excluyen de métricas. Distancia y elevación se calculan por segmento y se suman, sin conectar pausas. Promedios usan distancia válida y duración activa T13. Perfil/ganancia/pérdida se calculan por T15 sin Chart.js. Indicadores estimated de elevación se propagan cuando T15 interpola. Valores no calculables mantienen null; subtotales vacíos siguen la semántica 0 de T12/T15.
+
+Errores GPS: permission-denied conserva error, marca incomplete y detiene watcher. position-unavailable, timeout y unknown conservan error normalizado pero no paran una caminata activa; una nueva posición actualiza gpsStatus y limpia el error. unsupported falla al iniciar. Excepciones inesperadas de inicio se exponen como unknown y resultado geolocation-start-failed. Fallo de stop devuelve geolocation-stop-failed sin afirmar liberación exitosa; cleanup puede reintentarse. Generación interna descarta callbacks de observaciones anteriores tras stop/finish/cancel.
+
+No se añaden timers; refresh recibe timestamp o reloj inyectado. El snapshot no avanza tiempo por consultarlo: lo actualizan acciones/posiciones/refresh. No hay recuperación de almacenamiento ni continuación del controlador desde incomplete todavía; cancel permite iniciar sesión nueva y el estado local conserva información para capas futuras.
+
+## Corrección y revalidación de QA-T17-001 — RESOLVED
+
+La revisión independiente de Valerio obtuvo FAIL — CORRECTIONS REQUIRED. Defecto QA-T17-001 (severidad y prioridad altas): start(1000), refresh(11000), reloj=5000, cleanup devolvía regressive-time antes de llamar stopWatcher; quedaban watcherActive=true y cero llamadas a clearWatch. El PASS inicial de desarrollo documentado abajo no cubría esta regresión.
+
+Se corrigió únicamente stop/cleanup en trackingController.ts: se conserva el resultado de la transición, se intenta liberar el watcher antes de devolver el error y, si la liberación tiene éxito, watcherActive queda false. El estado temporal previo se conserva cuando falla la transición (puede seguir active/paused, pero sin watcher); no se oculta regressive-time ni invalid-timestamp. Si la detención falla, se devuelve geolocation-stop-failed sin afirmar liberación exitosa. Sin watcher activo, cleanup repetido no intenta una nueva transición de dominio.
+
+Dos pruebas nuevas verifican la regresión exacta y cleanup con NaN desde paused. Cubren clearWatch una vez con ID 0, watcher inactivo, error explícito, repetición segura y descarte de callbacks tardíos. La reproducción independiente en memoria confirmó: regressive-time, watcherActive=false, clearWatch=1, segundo cleanup exitoso y cero puntos tardíos.
+
+Validación tras corrección: 246 pruebas en 16 archivos PASS (6.06 s); build PASS (30 módulos, 294 ms); lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Comandos de validación iguales a los registrados abajo; reproducción adicional con node --input-type=module, mocks y módulos TypeScript transpilados en memoria. El primer intento de reproducción usó incorrectamente la firma de inyección de T09; corregido el harness sin cambios de producto, la reproducción pasó.
+
+Tras la corrección de Aurelio y las dos regresiones añadidas, Valerio realizó una segunda validación independiente: PASS — READY TO CLOSE T17. Reprodujo exactamente start(1000) → refresh(11000) → reloj=5000 → cleanup: regressive-time observable, clearWatch(0) una vez, watcherActive=false, cero observaciones activas, segundo cleanup exitoso sin alterar sesión y callbacks tardíos ignorados. Suite de 246 pruebas PASS (6.59 s), build PASS (414 ms), lint/TypeScript/diff PASS; regresión completa de T17 aprobada y sin defectos nuevos. QA-T17-001 quedó RESOLVED; el FAIL inicial permanece en el historial. T17 queda aprobada y cerrada por autorización del usuario. README actualizado para T00–T17 y T18 pendiente; documentos fuente, módulos anteriores y UI intactos. No se inició T18.
+
+
+Validación final de cierre de T17: Node 24.21.0 / npm 11.19.0; npm test -- --run PASS (246 pruebas, 16 archivos, 6.18 s), incluida QA-T17-001 y timestamp inválido desde paused; npm run build PASS (30 módulos, 320 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se verificó que el controlador solo importa T09, sesión T16, tipos y dominio T12–T15; sin repositories, IndexedDB, buffers/flush, UI, Visibility o Wake Lock. T18 no ha comenzado. El cierre incluye git status y git log -1 --oneline después del commit.
+
+## Pruebas y verificación inicial de T17
+
+21 pruebas en tests/trackingController.test.ts con mocks nativos y servicio T09 real: start/doble start, campos nullable/raw, puntos/métricas T12-T15, low-quality/suspicious/anomalous, pausa/raw/segmentos, reanudación sin duplicación o salto, posiciones antiguas, finish activo/paused, cancel/nuevo start, stop/cleanup idempotente extraído, callbacks tardíos, cuatro errores GPS, API ausente, excepción síncrona/start false, snapshots protegidos, acciones inválidas y servicio inyectado sin persistencia/integraciones.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 244 pruebas en 16 archivos, 5.71 s; 223 previas preservadas. |
+| Build | PASS | 30 módulos, 353 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Hallazgo de alcance: IMPLEMENTATION-PLAN lista buffer de persistencia y estado React en T17; la instrucción explícita más reciente limita esta entrega al controlador independiente de React y sin persistencia automática. Se sigue esa autorización, sin modificar documentos fuente ni iniciar T18. No hay llamadas a bulkAdd/save, buffers de escritura, triggers, flush, recuperación persistida, Page Visibility funcional o Wake Lock; esos puntos quedan para T18/T27/T28 y UI posterior.
+
+Limitaciones: almacenamiento solo en memoria (se pierde al recargar); cálculos/reclasificación por segmento completos pueden requerir optimización y validación de rendimiento para caminatas largas; polling/refresh explícito, sin suscripción; current speed/current pace no se calculan (no asignados explícitamente a T17); sin UI, mapas o gráficos; GPS real en iPhone pendiente. No se garantizan métricas completas en huecos. Sin dependencias nuevas ni bloqueos pendientes; README/documentos fuente/T08–T16/UI intactos. Vitest conserva sugerencia informativa de rendimiento jsdom. T18 no ha comenzado.
+
+## Historial de T16
+
+T16 ejecutada, aprobada por QA y cerrada en b432651 (feat: complete T16 walk session state).
 
 ## Estado y transiciones implementados en T16
 
@@ -860,6 +936,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T17; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: QA Tester / usuario para revisar T17 y autorizar su cierre.
 
-T16 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Estado, transiciones, errores, pausas, tiempos, incomplete y compatibilidad persistente documentados y validados. README actualizado en el cierre formal. T17 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T17 ejecutada y pendiente de revisión. Sin commit final hasta autorización del cierre. README se actualizará durante el cierre formal después de QA. T18 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
