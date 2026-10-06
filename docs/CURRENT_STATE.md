@@ -4,9 +4,56 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T10 — Servicio de Page Visibility.
+T11 — Servicio de Wake Lock.
 
-Estado: T10 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T10). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T10 page visibility service. T11 no ha comenzado.
+Estado: T11 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T11). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T11 wake lock service. T12 no ha comenzado.
+
+## Servicio de Wake Lock creado en T11
+
+src/services/wakeLock/wakeLockService.ts encapsula navigator.wakeLock.request('screen'), WakeLockSentinel.release y el evento release. Servicio sin imports, independiente de React, Dexie, repositories, geolocalización, UI y Settings. Sin solicitudes al importar/construir. Admite API inyectada para pruebas.
+
+API pública de createWakeLockService(injectedApi?):
+
+- isSupported(): boolean. Detecta presencia de request sin solicitar permisos.
+- isActive(): boolean. Comprueba sentinel existente y released false.
+- request(): Promise<WakeLockResult>. Solicita screen o reutiliza el bloqueo activo.
+- release(): Promise<WakeLockResult>. Libera el bloqueo; seguro sin lock o al repetirse.
+- subscribeRelease(callback): () => void. Notifica liberaciones automáticas y explícitas, con cancelación independiente e idempotente.
+- cleanup(): Promise<WakeLockResult>. Cancela todas las suscripciones y encola liberación; seguro al repetirse. El servicio puede reutilizarse posteriormente.
+
+WakeLockResult: { ok: true } o { ok: false, error: { kind, name, message } }. kind admite unsupported, request-failed, release-failed y already-released. Falta de API devuelve unsupported; request rechazado o excepción síncrona se normalizan conservando nombre/mensaje, incluidos DOMException de otros realms. Un sentinel ya liberado no se considera activo. No se exponen errores como mensajes de UI.
+
+Operaciones request/release serializadas por instancia para evitar solicitudes nativas duplicadas y mantener orden. Cleanup durante request pendiente espera su resolución y libera el sentinel recibido; la API nativa no proporciona cancelación de esa solicitud. Un release fallido devuelve error y conserva el sentinel para permitir reintentar. No se ocultan fallos de liberación ni se asume éxito.
+
+El listener release actualiza el estado, se retira del sentinel y notifica una sola vez; se elimina también al liberar explícitamente. Suscripciones con el mismo callback son independientes. El consumidor debe llamar cleanup y revisar su resultado. No hay recuperación automática, política de visibilidad ni decisiones de inicio/fin de caminata.
+
+Referencia: [W3C Screen Wake Lock API](https://www.w3.org/TR/screen-wake-lock/).
+
+## Pruebas y verificación de T11
+
+18 pruebas nuevas en tests/wakeLock.test.ts con mock de navigator.wakeLock y sentinel respaldado por EventTarget: soporte/no soporte/sin navigator, screen, estado activo, solicitudes concurrentes/consecutivas, release explícito/automático, listener exacto, ausencia e idempotencia, nueva solicitud, rechazo/DOMException/excepción síncrona, sentinel ya liberado, fallo de release y reintento, cleanup repetido o durante solicitud pendiente, orden release/request, suscripciones selectivas e inyección. Teardown limpia el servicio y restaura globals. Sin Wake Lock real.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 81 pruebas en 9 archivos, 4.55 s; 63 anteriores preservadas. |
+| Build | PASS | 30 módulos, 339 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Hallazgo corregido durante desarrollo: normalización inicial mediante instanceof Error no preservaba nombre/mensaje de DOMException en jsdom; se reemplazó por lectura estructural y la regresión pasó. Vitest mantiene su sugerencia informativa sobre rendimiento jsdom. Sin dependencias nuevas, desviaciones ni bloqueos. Se retira .gitkeep de wakeLock. README actualizado en el cierre formal con Wake Lock, testing, tareas T00–T11 y T12 pendiente. Documentos fuente intactos. Sin conexión a Settings, Active Walk, Page Visibility, tracking o persistencia; sin métricas. Validaciones de soporte/políticas en iPhone pendientes de pruebas reales. T12 no ha comenzado.
+
+La revisión independiente de Valerio aprobó los 24 criterios de T11: soporte/fallback, request screen/release, estado y liberación automática, re-solicitud, cleanup, independencia y alcance; 81 pruebas, build, lint, TypeScript y git diff --check PASS. Su comprobación adicional confirmó ausencia de locks/listeners residuales tras cleanup. Sin defectos ni bloqueos.
+
+Validación final de cierre de T11: npm test -- --run PASS (81 pruebas, 9 archivos, 4.45 s); npm run build PASS (30 módulos, 328 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T12 sin iniciar.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T10
+
+T10 ejecutada, aprobada por QA y cerrada en cb83386 (feat: complete T10 page visibility service).
 
 ## Servicio de Page Visibility creado en T10
 
@@ -516,6 +563,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T11; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T12; Senior Developer únicamente tras esa autorización.
 
-T10 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Servicio, API, suscripciones y cleanup documentados y validados. README actualizado durante el cierre formal. T11 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T11 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Servicio, soporte/fallback, release y pruebas documentados y validados. README actualizado en el cierre formal. T12 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

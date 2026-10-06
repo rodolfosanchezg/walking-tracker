@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T10 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T11 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T11 — Servicio de Wake Lock**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización y Page Visibility están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. Cálculos de métricas, mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T12 — Distancia**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. Cálculos de métricas, mapas, gráficos e historial/configuración funcional siguen pendientes.
 
-Estado del repositorio tras T10: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización y visibilidad y 63 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T11: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock y 81 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -27,7 +27,8 @@ Estado del repositorio tras T10: router/layout, cinco páginas base, tipos indep
 - `src/data/repositories/`: acceso a caminatas, puntos, sesión activa y ajustes mediante APIs independientes de React.
 - `src/services/geolocation/`: observación de posiciones y errores, con inicio/detención y sin integración UI.
 - `src/services/visibility/`: lectura de visibilidad, suscripción a cambios y cleanup independiente.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización y visibilidad con mocks.
+- `src/services/wakeLock/`: soporte, solicitud/liberación de bloqueo de pantalla, estado y notificaciones de release.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -52,7 +53,7 @@ src/
 │   │   ├── geolocationService.ts
 │   │   └── types.ts
 │   ├── visibility/visibilityService.ts
-│   └── wakeLock/
+│   └── wakeLock/wakeLockService.ts
 ├── data/
 │   ├── db/database.ts
 │   ├── repositories/
@@ -82,7 +83,7 @@ src/
 └── index.css
 ```
 
-Las 11 carpetas finales todavía vacías contienen `.gitkeep`; db, repositories, geolocation y visibility ya contienen implementación. Wake Lock y migraciones futuras siguen pendientes.
+Las 10 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos y los tres servicios del navegador ya contienen implementación. Métricas, integraciones funcionales y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -118,7 +119,7 @@ createGeolocationService encapsula navigator.geolocation.watchPosition y clearWa
 
 RawPosition conserva latitude, longitude, altitude, accuracy, speed y timestamp, incluidos nulls en altitud/velocidad y valores cero. No asigna walkId, identidad, calidad definitiva ni estimaciones. Los errores se normalizan como permission-denied, position-unavailable y timeout; también contempla unknown y unsupported, sin mensajes de UI.
 
-Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. Todavía no existe tracking funcional integrado con UI/persistencia, cálculo de métricas ni Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
+Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. Todavía no existe tracking funcional integrado con UI/persistencia, cálculo de métricas ni integración con Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
 
 ## Servicio de Page Visibility disponible
 
@@ -127,6 +128,16 @@ createVisibilityService encapsula document.visibilityState y visibilitychange. E
 Cada suscripción tiene un listener independiente. Su cleanup elimina exactamente ese listener, es idempotente y no afecta otras suscripciones, incluso si comparten callback. El consumidor debe ejecutar cada cleanup. Las pruebas verifican cambios de estado, cancelación selectiva y ausencia de callbacks tras cancelar.
 
 Todavía no existe integración funcional entre visibility, tracking y persistencia: no se hace flush de datos, no se muestran advertencias ni se identifican huecos de tracking. Esas acciones corresponden a tareas posteriores.
+
+## Servicio de Wake Lock disponible
+
+createWakeLockService encapsula navigator.wakeLock.request('screen'), Sentinel.release y el evento release. Expone isSupported(), isActive(), request(), release(), subscribeRelease(callback) y cleanup(). No solicita un lock al importar o construir.
+
+Las operaciones se serializan por instancia para evitar locks duplicados. La liberación automática actualiza el estado y permite solicitar uno nuevo; no hay recuperación automática. Las liberaciones retiran el listener del sentinel. Cleanup cancela suscripciones y libera incluso un lock cuya solicitud estuviera pendiente; es repetible.
+
+La ausencia de API y los fallos devuelven WakeLockResult con error normalizado, sin mensajes de UI. Si falla release, se conserva la referencia para permitir reintentar; el consumidor debe revisar el resultado. Soporte y políticas en iPhone siguen pendientes de validación real.
+
+Geolocalización, Page Visibility y Wake Lock todavía no están integrados en un flujo funcional de tracking. Wake Lock no lee Settings ni está conectado a Active Walk; tampoco implementa comportamiento ante cambios de visibilidad.
 
 ## Modelos TypeScript definidos
 
@@ -182,7 +193,7 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 63 pruebas/comprobaciones en ocho archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización y visibilidad; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 81 pruebas/comprobaciones en nueve archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad y Wake Lock; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
