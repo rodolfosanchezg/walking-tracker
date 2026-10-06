@@ -4,9 +4,45 @@ Fecha: 2026-10-05 (America/Bogota).
 
 ## Tarea ejecutada
 
-T03 — Configurar testing con Vitest y React Testing Library.
+T04 — Crear estructura de carpetas.
 
-Estado: T03 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T03`). Cierre formal autorizado por el usuario mediante el commit `test: complete T03 testing setup`. T04 no ha comenzado.
+Estado: T04 CLOSED; ejecutada y aprobada por QA (Valerio: `PASS — READY TO CLOSE T04`). Cierre formal autorizado por el usuario mediante el commit `chore: complete T04 project structure`. T05 no ha comenzado.
+
+## Estructura creada en T04
+
+Se crearon las carpetas aprobadas dentro de `src/`: `app/providers`, `features/{tracking,history,settings,maps}`, `services/{geolocation,visibility,wakeLock}`, `data/{db,repositories,migrations}`, `domain/{metrics,elevation,filtering,estimation}`, `components`, `hooks`, `utils` y `types`.
+
+- Se añadieron 19 archivos `.gitkeep`, uno por carpeta final vacía. Los padres con subcarpetas no necesitan marcadores adicionales.
+- Se retiró `src/.gitkeep`, innecesario porque la raíz contiene fuentes y subcarpetas.
+- Ningún archivo fue reubicado. `src/App.tsx`, `src/main.tsx` y `src/index.css` se conservaron intactos, junto con sus imports y las pruebas existentes. Sin alias nuevos ni duplicación de código.
+- La estructura de carpetas coincide con la aprobada. Respecto al árbol ilustrativo de `ARCHITECTURE.md`, App sigue en la ubicación generada por Vite; moverlo no es necesario para crear las carpetas autorizadas. No se crea `app/router.tsx`, porque configurar navegación pertenece a T05.
+- No se implementaron rutas, modelos, servicios, tracking, mapas, IndexedDB, gráficos ni lógica funcional. No se cambiaron dependencias ni configuraciones.
+- README y AGENTS se conservaron durante la implementación de T04 y se actualizan en el cierre autorizado para reflejar T00–T04 completadas, estructura creada y T05 pendiente. README conserva stack, testing, comandos y limitaciones vigentes del MVP.
+
+## Verificación de T04
+
+Entorno: Node.js `24.21.0` mediante NVM, npm `11.19.0`.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Estructura coincide con arquitectura | PASS | Todas las carpetas solicitadas presentes; marcadores solo en carpetas finales vacías. |
+| No existe lógica duplicada | PASS | Solo se crean marcadores; fuentes y pruebas conservadas sin copias ni lógica nueva. |
+| Imports base funcionan | PASS | Tests, build y TypeScript pasan con imports existentes intactos. |
+| Tests | PASS | 2 archivos y 2 pruebas aprobados en 1.86 s. |
+| Build | PASS | `npm run build`, 16 módulos, build Vite en 279 ms. |
+| Lint | PASS | `npm run lint`, salida 0. |
+| TypeScript | PASS | `tsc -b --force` sin errores. |
+| Whitespace | PASS | `git diff --check` sin errores. |
+
+Comandos: `source ~/.nvm/nvm.sh`, `nvm use`, `npm test`, `npm run build`, `npm run lint`, `./node_modules/.bin/tsc -b --force`, `git diff --check` y `git status --short --branch --untracked-files=all`. Se verificaron además las carpetas, los marcadores y la preservación byte a byte de los archivos existentes fuera del estado/resultados y el marcador retirado.
+
+Sin bloqueos pendientes ni cambios arquitectónicos. Cambios limitados a carpetas/marcadores y documentación de estado/resultados. T05 no ha comenzado.
+
+Valerio aprobó independientemente los 14 criterios revisados de T04, sin defectos: estructura, compatibilidad Vite, imports, ausencia de funcionalidad prematura, uso necesario de marcadores, tests, build, lint, TypeScript, diff y estado documental. El cierre incorpora una última validación de tests/build/lint/TypeScript forzado y `git diff --check`, seguida del commit autorizado y comprobación de `git status` y `git log -1 --oneline`. No hubo reubicaciones de archivos.
+
+## Historial de T03
+
+T03 ejecutada, aprobada por QA (Valerio: `PASS — READY TO CLOSE T03`) y cerrada en `988e33a` (`test: complete T03 testing setup`). Durante T03 se configuró testing; la estructura de carpetas se incorpora posteriormente en T04.
 
 ## Configuración y verificación de T03
 
@@ -185,4 +221,4 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 Siguiente responsable: usuario para autorizar una tarea posterior; Senior Developer únicamente tras esa autorización.
 
-T03 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. Vitest, RTL y jest-dom operativos, dos pruebas mínimas aprobadas y build/lint/TypeScript validados. T04 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T04 ejecutada, aprobada por QA y cerrada mediante commit autorizado por el usuario. Estructura aprobada creada, sin reubicaciones ni lógica funcional; tests, build, lint y TypeScript validados. README actualizado conforme a la regla permanente. T05 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

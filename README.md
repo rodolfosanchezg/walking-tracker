@@ -4,9 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00, T01, T02 y T03 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite están operativos; existen una pantalla estática base y dos pruebas mínimas de bootstrap.
+T00, T01, T02, T03 y T04 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite están operativos; existen una pantalla estática base, dos pruebas mínimas de bootstrap y la estructura de carpetas aprobada.
 
-La siguiente tarea pendiente es **T04 — Crear estructura de carpetas**. No ha comenzado y requiere autorización del usuario. Todavía no hay navegación, tracking GPS, métricas, mapas, gráficos ni persistencia funcional.
+La siguiente tarea pendiente es **T05 — Configurar navegación**. No ha comenzado y requiere autorización del usuario. Todavía no hay navegación, tracking GPS, métricas, mapas, gráficos ni persistencia funcional.
+
+Estado del repositorio tras T04: estructura preparada para implementación incremental, fuentes Vite conservadas sin reubicaciones, dependencias y testing operativos. Las carpetas funcionales están reservadas mediante `.gitkeep`, sin implementación de negocio.
 
 ## Stack y dependencias instaladas
 
@@ -19,12 +21,44 @@ La siguiente tarea pendiente es **T04 — Crear estructura de carpetas**. No ha 
 ## Estructura actual
 
 - `docs/`: requisitos, decisiones, arquitectura, plan de implementación, estado y evidencias de validación.
-- `src/`: componente App estático, entrada React y CSS base; estructura de dominio pendiente de T04.
+- `src/`: estructura aprobada creada; App estático, entrada React y CSS base permanecen en la raíz de `src/`.
 - `tests/`: setup jest-dom/cleanup RTL, prueba de App y prueba de una función fixture aislada.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
 - `.gitignore`: exclusiones de dependencias, builds, cachés y configuración local.
+
+```text
+src/
+├── app/providers/
+├── features/
+│   ├── tracking/
+│   ├── history/
+│   ├── settings/
+│   └── maps/
+├── services/
+│   ├── geolocation/
+│   ├── visibility/
+│   └── wakeLock/
+├── data/
+│   ├── db/
+│   ├── repositories/
+│   └── migrations/
+├── domain/
+│   ├── metrics/
+│   ├── elevation/
+│   ├── filtering/
+│   └── estimation/
+├── components/
+├── hooks/
+├── utils/
+├── types/
+├── App.tsx
+├── main.tsx
+└── index.css
+```
+
+Las 19 carpetas finales vacías contienen `.gitkeep` para conservarse en Git; los padres no necesitan marcadores adicionales. No se han creado router, modelos ni servicios funcionales.
 
 ## Documentación
 

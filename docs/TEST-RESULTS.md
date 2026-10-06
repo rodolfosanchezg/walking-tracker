@@ -72,3 +72,20 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 | Whitespace | PASS | `git diff --check` sin errores. |
 
 Pruebas mínimas del bootstrap exclusivamente; no se ejecutan pruebas de tracking, GPS, métricas o persistencia. Sin bloqueos ni desviaciones. Cambios incluidos en el commit autorizado de cierre de T03; T04 no ha comenzado.
+
+## T04 — Crear estructura de carpetas — 2026-10-05
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: `PASS — READY TO CLOSE T04`. Los 14 criterios revisados pasaron, sin defectos. Cierre autorizado por el usuario.
+
+| Criterio / comprobación | Resultado | Evidencia |
+|---|---|---|
+| Estructura coincide con arquitectura | PASS | Carpetas aprobadas presentes; 19 marcadores en carpetas finales vacías. |
+| No existe lógica duplicada | PASS | Sin fuentes nuevas, copias ni reubicaciones; solo marcadores y documentación. |
+| Imports base funcionan | PASS | Imports y fuentes intactos; pruebas/build/TypeScript aprobados. |
+| Tests | PASS | `npm test`: 2 archivos y 2 pruebas PASS, 1.86 s. |
+| Build | PASS | `npm run build`: 16 módulos, 279 ms, salida 0. |
+| Lint | PASS | `npm run lint`, salida 0. |
+| TypeScript | PASS | `tsc -b --force` sin errores. |
+| Integridad / whitespace | PASS | README, documentos principales, fuentes y configuraciones intactos; `git diff --check` sin errores. |
+
+App permanece en `src/App.tsx` para conservar la estructura Vite sin reubicaciones innecesarias; router pendiente de T05. Se retiró el marcador innecesario `src/.gitkeep`. Sin dependencias nuevas, lógica funcional ni inicio de T05. Sin bloqueos; cambios incluidos en el commit de cierre autorizado, con README y estado de AGENTS actualizados.
