@@ -366,3 +366,60 @@ Valerio reprodujo start(1000), refresh a 11000, reloj=5000 y cleanup: regressive
 Cierre formal autorizado por el usuario; README y CURRENT_STATE actualizados. Sin implementación de T18, cambios a documentos fuente ni nuevas dependencias.
 
 Validación final de cierre de T17: Node 24.21.0 / npm 11.19.0; npm test -- --run PASS (246 pruebas, 16 archivos, 6.18 s), incluida QA-T17-001 y timestamp inválido desde paused; npm run build PASS (30 módulos, 320 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se verificó que el controlador solo importa T09, sesión T16, tipos y dominio T12–T15; sin repositories, IndexedDB, buffers/flush, UI, Visibility o Wake Lock. T18 no ha comenzado. El cierre incluye git status y git log -1 --oneline después del commit.
+
+
+## T18 — Persistencia por bloques — 2026-10-06
+
+Verificación de Aurelio; pendiente de QA y cierre. Sin commit. T19 no ha comenzado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Buffer y triggers OR | PASS | Bajo umbral, 3 puntos en tests/50 por defecto, frontera de 30000 ms y forceFlush. |
+| Concurrencia | PASS | Nuevos puntos no se limpian con el bloque anterior; flush simultáneo no duplica; nuevo bloque automático y finish durante escritura. |
+| Fallos/reintento | PASS | bulkAdd/save fallidos conservan buffer; transacción completa revierte; error observable y retry sin duplicados. |
+| ActiveSession / Walk | PASS | Inicio, pause/resume/incomplete y bloques; snapshot extendido con historial y clasificación/segmentos persistidos. |
+| Finalización | PASS | Fuerza pendientes, actualiza Walk y elimina sesión dentro de transacción exitosa; fallos de puntos/Walk/save/clear preservan recovery. |
+| Raw / cancel / cleanup | PASS | Raw anomalous y pausa intactos; cancel no borra registros; cleanup seguro/reintentable. |
+| Integridad de alcance | PASS | T17 sin cambios, README/fuentes intactos; sin T19/T26/T27/T28 ni dependencias nuevas. |
+| Tests | PASS | 272 pruebas, 17 archivos, 5.93 s; 26 casos T18 y 246 anteriores (incluida QA-T17-001). |
+| Build | PASS | 30 módulos, 331 ms; salida 0. |
+| Lint / TypeScript | PASS | npm run lint y tsc -b --force; salida 0. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Pruebas nuevas en tests/trackingPersistence.test.ts: IndexedDB simulada aislada y repositories reales; limpieza de base al finalizar. Adaptadores con promesas controladas para concurrencia. Fallo inicial de build por import de tipo sin uso corregido; suite inicial 268 PASS y suite final 272 PASS. Parámetros, secuencia transaccional, limitaciones y datos de recuperación documentados en CURRENT_STATE.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+
+## T18 — QA-T18-001: FAIL → corrección → pendiente de revalidación — 2026-10-06
+
+Primera validación de Valerio: FAIL — CORRECTIONS REQUIRED. QA-T18-001 (High/High): escrituras de estado sin puntos actualizaban lastFlushAt y posponían el trigger temporal. Evidencia histórica: start1000/punto/pause20000/tick31001 produjo buffer1/persistidos0/error=null; varios estados mantuvieron el punto pendiente a 80000. Las 272 pruebas previas y escenarios A–E pasaron, pero no cubrían esta condición.
+
+Aurelio separó lastPersistedAt del plazo de puntos, ahora controlado por pendingSince y horas de recepción por ID. Guardar estado no cambia el inicio del buffer; éxito elimina solo tiempos/IDs del bloque; fallo conserva todo. No se alteraron valores de umbral, repositorios, composición, T17 ni esquema.
+
+| Validación posterior a corrección | Resultado | Evidencia |
+|---|---|---|
+| QA-T18-001 exacto | PASS | pause20000 mantiene pendingSince1000; tick31001 persiste un punto, buffer0, sin duplicados. |
+| Múltiples pause/resume | PASS | Estados a 5000/10000/20000/30000 no posponen plazo; punto persistido al superar 30 s. |
+| Fronteras | PASS | Recepción1000: 30999 no flush; 31000 y 31001 sí, >= inclusivo. |
+| Punto nuevo durante flush | PASS | Conserva recepción5000 pese a commit20000/pause25000; persiste a35000. |
+| Regresión completa | PASS | 278 pruebas, 17 archivos, 5.98 s; 6 casos nuevos y 272 anteriores, incluido T17/QA-T17-001. |
+| Build | PASS | 30 módulos, 336 ms; salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+| Revalidación independiente | PENDING | Corrección lista para QA; T18 abierta, sin cierre ni commit. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Reproducción adicional: node --input-type=module con transpilación en memoria, repositories reales e IndexedDB simulada aislada. Node24.21.0 / npm11.19.0.
+
+README/documentos fuente intactos. No se inició T19 ni se integró T26/T27/T28. El FAIL original permanece; QA-T18-001 está corregido por desarrollo y pendiente de revalidación.
+
+
+## T18 — Revalidación independiente PASS y cierre formal — 2026-10-06
+
+Historial conservado: primera validación FAIL → QA-T18-001 — Guardados de estado posponen el flush temporal → corrección de Aurelio con seis casos de regresión → segunda validación de Valerio PASS — READY TO CLOSE T18. QA-T18-001: RESOLVED; cerrado, sin borrar el fallo histórico. La sección previa describe la entrega anterior pendiente de revisión, ahora completada.
+
+Valerio confirmó independientemente A–F con repositories reales/IndexedDB simulada: cantidad49/50, tiempo normal, reproducción exacta, concurrencia A/B y C/D, bulkAdd fallido/retry y finish fallido/retry. Estado20000 no modifica pendingSince1000; tick31001 produce bulkAdd1, registro1, buffer0/error=null. Múltiples pause/resume no posponen; fronteras30999/31000/31001 PASS. 278 pruebas (17 archivos,6.02 s), build (295 ms), lint, TypeScript y git diff --check PASS. Sin defectos nuevos.
+
+Cierre formal autorizado por el usuario. README y CURRENT_STATE actualizados; documentos fuente intactos. Sin implementación T19/T26/T27/T28 ni dependencias nuevas.
+
+Validación final de cierre de T18: Node24.21.0 / npm11.19.0; npm test -- --run PASS (278 pruebas,17 archivos,5.86 s), incluyendo seis regresiones QA-T18-001 y T17; npm run build PASS (30 módulos,304 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se verificó T19 sin implementar: ActiveWalkPage permanece placeholder, T17 intacto; sin recuperación T26 ni integración Visibility/Wake Lock/Leaflet/Chart.js. El cierre incluye git status y git log -1 --oneline después del commit.

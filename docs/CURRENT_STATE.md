@@ -4,9 +4,64 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T17 — Orquestador de tracking.
+T18 — Persistencia por bloques.
 
-Estado: T17 CLOSED; cierre formal autorizado tras segunda validación de Valerio PASS — READY TO CLOSE T17. QA-T17-001 RESOLVED. T18 no ha comenzado.
+Estado: T18 CLOSED; cierre formal autorizado tras revalidación de Valerio PASS — READY TO CLOSE T18. QA-T18-001 RESOLVED. T19 no ha comenzado. T26/T27/T28 tampoco están implementadas.
+
+## Persistencia incremental implementada en T18
+
+- src/features/tracking/persistenceCoordinator.ts: buffer/coordinador independiente de React, Dexie y browser APIs. Recibe snapshots T17 mediante observe, evalúa checkFlush, ofrece forceFlush, finalize, cleanup, getState y settled para esperar la cola en pruebas.
+- src/data/repositories/trackingPersistenceStore.ts: frontera transaccional que reutiliza WalkRepository, TrackPointRepository y ActiveSessionRepository sobre la misma base v1. No cambia esquema ni repositories T08.
+- src/features/tracking/persistentTrackingController.ts: composición opcional con T17 sin modificarlo. Intercepta callbacks del servicio T09 y acciones para entregar snapshots al coordinador. Conserva start/pause/resume/refresh síncronos: el tracking sigue recibiendo GPS durante escrituras. Expone estado/error persistente, tick, forceFlush y finish/cleanup/cancel asíncronos.
+
+Parámetros centralizados DEFAULT_PERSISTENCE_LIMITS: 50 puntos pendientes O 30000 ms desde la recepción del primer punto todavía pendiente (pendingSince). Guardar únicamente estado no reinicia esa ventana. Valores iniciales ajustables elegidos bajo la autorización T18: bloques moderados y ventana relativamente larga para reducir escrituras. El tiempo se comprueba al observar posiciones, mediante checkFlush/tick o refresh. No hay timer oculto; el consumidor debe invocar tick periódicamente si no llegan posiciones. La ventana de pérdida esperada es hasta el bloque pendiente (menos de 50 puntos/30 s cuando se comprueban regularmente los triggers); un fallo de almacenamiento o suspensión del navegador puede ampliarla y queda observable.
+
+Buffer: guarda CapturedPoint originales y deduplica por ID. bulkAdd persiste exclusivamente raw TrackPoint, sin cambiar coordenadas, altitud, speed, accuracy, timestamp ni calidad raw. Anomalous y puntos pausados también se guardan. Su clasificación separada y segment (incluido null para pausa) quedan en pointMetadata del snapshot extendido de ActiveSession; no se convierten en ruta activa. Se mantiene orden de captura; el repository permite consulta ordenada por timestamp.
+
+Concurrencia: cola serial para todas las escrituras; flushes simultáneos comparten una promesa. Cada flush captura un bloque y su snapshot antes de escribir; tras éxito elimina solo IDs de ese bloque. Puntos nuevos recibidos durante la escritura permanecen pendientes; si alcanzan el límite, comienza otro flush al terminar el anterior. Finalizar espera escrituras previas y luego vacía el resto sin solaparlas. No hay bucle de reintentos automático ante fallo.
+
+Cada commit es una transacción Dexie sobre walks, trackPoints y activeSession, a través de los repositories: crea Walk al primer guardado, lo actualiza en estados/bloques y guarda ActiveSession. Si falla bulkAdd, Walk, save o clear, revierte toda la transacción. Buffer y marcadores confirmados se conservan; error es observable en getState y en el resultado asíncrono. forceFlush reintenta el bloque sin duplicados. Un ID Walk ya existente no se sobrescribe al iniciar: error explícito, recuperación no implementada aquí.
+
+ActiveSession se guarda al inicio, pause/resume/incomplete y cada flush; no en cada refresh visual salvo que se alcance un trigger. Campos lastPersistedAt/lastPointTimestamp se actualizan solo tras commit exitoso. Además del contrato T06 se guarda session (pausas/interrupciones/nombre/tiempos T16) y pointMetadata solo para IDs persistidos. No se cambian modelos base ni versión de esquema: IndexedDB conserva objetos completos. Los resúmenes en cambios de estado reflejan métricas observadas en memoria; pueden incluir puntos aún pendientes, por lo que la futura recuperación deberá reconciliar/recalcular desde los registros confirmados. No se afirma que todos los puntos capturados ya estén guardados.
+
+Finalización: T17 termina y libera GPS; el coordinador espera el flush previo, fuerza el bloque pendiente, actualiza Walk con estado/métricas finales, guarda snapshot de sesión y elimina activeSession dentro de la misma transacción. clear se confirma únicamente con toda la escritura final. Si falla, conserva recovery state previo y buffer; finish puede repetirse aunque T17 ya esté finished. forceFlush/cleanup de una sesión finished también pueden completar la transacción final.
+
+Cleanup detiene GPS mediante T17, observa el estado, fuerza pendientes y dispone el coordinador solo tras éxito; es repetible y, si falla, permite reintentar. Cancel primero detiene y conserva la sesión como incomplete junto con sus puntos; solo descarta memoria tras guardado exitoso, nunca borra Walk/puntos persistidos. No implementa Discard ni confirmaciones de T26. Composición/coordinador son de una sola caminata: crear otra instancia para la siguiente sesión, sin reutilizar un coordinador dispuesto/finalizado.
+
+No se integra con UI, Leaflet, Chart.js, Page Visibility ni Wake Lock. forceFlush queda disponible para T27; no se suscribe a visibilitychange. No detecta sesiones almacenadas al abrir ni implementa Continue/Save/Discard de T26. README actualizado en el cierre formal para T00–T18 y T19 pendiente. Los cuatro documentos fuente permanecen intactos.
+
+## QA-T18-001 — FAIL → corrección → revalidación PASS — RESOLVED
+
+Valerio detectó QA-T18-001 — Guardados de estado posponen el flush temporal (High/High). Primera validación: FAIL — CORRECTIONS REQUIRED. Suite previa de 272 pruebas PASS y escenarios independientes A–E PASS, pero F confirmó el defecto: start(1000), punto, pause(20000), tick(31001) dejaba pendingCount=1/persistedPoints=0/error=null; pause/resume posteriores podían mantener el punto pendiente hasta 80000 ms sin persistirlo. La causa era actualizar lastFlushAt también con escrituras de estado vacías y utilizarlo como referencia del trigger de puntos.
+
+Corrección acotada a persistenceCoordinator.ts: el marcador de último guardado se denomina lastPersistedAt y conserva su significado para estado/recovery. Un mapa registra la hora local de recepción de cada ID en el buffer; pendingSince es la del primer punto que aún permanece pendiente. No utiliza timestamps GPS. checkFlush compara con pendingSince y conserva >=30000 ms; pause/resume/otros guardados vacíos no modifican esos tiempos. Solo tras commit exitoso se retiran los tiempos de IDs del bloque confirmado. Los puntos recibidos durante un flush mantienen su propia ventana; un fallo no reinicia el plazo. Buffer vacío devuelve pendingSince=null y una nueva captura abre su propia ventana.
+
+Se añadieron seis casos de regresión: reproducción exacta, múltiples pause/resume, fronteras 30999/31000/31001 ms desde recepción a 1000 y recepción durante flush con guardado de estado posterior. Comprobaciones independientes con repositories reales/fake IndexedDB confirmaron el punto único persistido y buffer vacío, sin duplicación. A 30999 no se escribe, a 31000 se escribe (frontera inclusiva), y a 31001 se mantiene un único registro; múltiples estados conservan pendingSince=1000 aunque lastPersistedAt avance.
+
+Validación tras corrección: 278 pruebas en 17 archivos PASS (5.98 s), incluidas las 272 previas y T17/QA-T17-001; build PASS (30 módulos, 336 ms); lint PASS; TypeScript tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Se mantienen concurrencia, deduplicación, rollback/retry, raw/anomalous, pausa/reanudación y finalización con recuperación preservada ante fallos. Coordinador, pruebas y este registro fueron los únicos archivos cambiados durante la corrección; composición, adapter transaccional, T17 y README intactos. Sin commit ni T19/T26/T27/T28. Ese estado corresponde a la entrega de corrección previa a QA. Valerio realizó la segunda validación: PASS — READY TO CLOSE T18. Reproducción exacta con repositories reales: pause20000 mantuvo pendingSince1000; tick31001 ejecutó bulkAdd una vez, persistió un punto, dejó buffer0/error=null y no duplicó. Escenarios independientes A–F, múltiples cambios, fronteras y regresión completa PASS; 278 pruebas (6.02 s), build (295 ms), lint/TypeScript/diff PASS. QA-T18-001 quedó RESOLVED, sin defectos nuevos. El usuario autorizó el cierre formal de T18; T19 no ha comenzado. El FAIL original se conserva.
+
+
+Validación final de cierre de T18: Node24.21.0 / npm11.19.0; npm test -- --run PASS (278 pruebas,17 archivos,5.86 s), incluyendo seis regresiones QA-T18-001 y T17; npm run build PASS (30 módulos,304 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se verificó T19 sin implementar: ActiveWalkPage permanece placeholder, T17 intacto; sin recuperación T26 ni integración Visibility/Wake Lock/Leaflet/Chart.js. El cierre incluye git status y git log -1 --oneline después del commit.
+
+## Pruebas y verificación inicial de T18
+
+26 casos nuevos en tests/trackingPersistence.test.ts usan repositories reales y una IDBFactory aislada por prueba, además de adaptadores controlados para concurrencia. Cubren inicio, buffer vacío/bajo umbral, triggers OR/frontera temporal, bloque correcto, forceFlush, arrivals durante flush, llamadas concurrentes, siguiente bloque automático, fallos/reintentos/rollback de puntos y sesión, pausas, finalización pendiente/en curso y fallos en cuatro fases, preservación raw/anomalous/pausa, incomplete, cleanup/cancel no destructivo, IDs existentes y límites inválidos. Limpieza mediante database.delete al finalizar; sin datos reales del navegador.
+
+| Validación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 272 pruebas, 17 archivos, 5.93 s; 246 previas incluidas T17/QA-T17-001 y 26 nuevas. |
+| Build | PASS | 30 módulos, 331 ms, salida 0. |
+| Lint | PASS | npm run lint, salida 0. |
+| TypeScript | PASS | tsc -b --force, salida 0. |
+| Whitespace | PASS | git diff --check, salida 0. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Hallazgo corregido durante desarrollo: suite inicial de 268 pruebas PASS, pero build detectó un import de tipo sin uso en el nuevo archivo de pruebas. Retirado; validación completa ampliada PASS. Sin dependencias nuevas ni bloqueos. Parámetros y cuotas/durabilidad de Safari requieren validación real; snapshots de clasificación completos pueden crecer en caminatas largas. El wrapper opcional no está conectado a UI y tick requiere consumidor futuro. No se inició T19.
+
+## Historial de T17
+
+T17 cerrada en 179d14a (feat: complete T17 tracking orchestrator), tras QA-T17-001 corregido y revalidación PASS. El FAIL original permanece a continuación y en TEST-RESULTS.
 
 ## Orquestador implementado en T17
 
