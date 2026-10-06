@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T08 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T09 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T09 — Servicio de geolocalización**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Todavía no existe servicio de geolocalización ni tracking GPS funcional; la UI no consume datos persistidos. Cálculos de métricas, mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T10 — Servicio de Page Visibility**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. El servicio de geolocalización está disponible y probado con mocks; todavía no existe tracking funcional integrado con UI/persistencia. Cálculos de métricas, mapas, gráficos e historial/configuración funcional siguen pendientes.
 
-Estado del repositorio tras T08: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories y 35 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T09: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicio de geolocalización y 52 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -25,7 +25,8 @@ Estado del repositorio tras T08: router/layout, cinco páginas base, tipos indep
 - `src/types/`: modelos y estados sin implementación runtime, independientes de React y persistencia.
 - `src/data/db/`: factory Dexie y esquema v1, sin apertura automática ni conexión desde React.
 - `src/data/repositories/`: acceso a caminatas, puntos, sesión activa y ajustes mediante APIs independientes de React.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local y repositories.
+- `src/services/geolocation/`: observación de posiciones y errores, con inicio/detención y sin integración UI.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories y geolocalización con mocks.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -47,6 +48,8 @@ src/
 │   └── maps/
 ├── services/
 │   ├── geolocation/
+│   │   ├── geolocationService.ts
+│   │   └── types.ts
 │   ├── visibility/
 │   └── wakeLock/
 ├── data/
@@ -78,7 +81,7 @@ src/
 └── index.css
 ```
 
-Las 13 carpetas finales todavía vacías contienen `.gitkeep`; db y repositories ya contienen implementación. Migraciones futuras y servicios del navegador siguen pendientes.
+Las 12 carpetas finales todavía vacías contienen `.gitkeep`; db, repositories y geolocation ya contienen implementación. Page Visibility, Wake Lock y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -107,6 +110,14 @@ Repositories disponibles:
 | SettingsRepository | Guardar/reemplazar, leer y actualizar los ajustes aprobados. |
 
 Reutilizan la base y los modelos existentes mediante una instancia privada inyectada. getByWalkId aprovecha el índice walkId y ordena por timestamp; bulkAdd revierte el bloque completo si falla. Sesión y ajustes utilizan claves fijas. Eliminar una caminata no elimina sus puntos automáticamente; las políticas de borrado coordinado se implementarán en tareas posteriores.
+
+## Servicio de geolocalización disponible
+
+createGeolocationService encapsula navigator.geolocation.watchPosition y clearWatch. Expone start({ onPosition, onError }, options?) y stop(); admite un adaptador inyectado para pruebas. Evita watchers duplicados por instancia, permite reiniciar y ofrece cleanup idempotente. El consumidor futuro deberá reutilizar una instancia; se ignoran callbacks tardíos de observaciones detenidas.
+
+RawPosition conserva latitude, longitude, altitude, accuracy, speed y timestamp, incluidos nulls en altitud/velocidad y valores cero. No asigna walkId, identidad, calidad definitiva ni estimaciones. Los errores se normalizan como permission-denied, position-unavailable y timeout; también contempla unknown y unsupported, sin mensajes de UI.
+
+Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. Todavía no existe tracking funcional integrado con UI/persistencia, cálculo de métricas, Page Visibility ni Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
 
 ## Modelos TypeScript definidos
 
@@ -162,11 +173,11 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 35 pruebas/comprobaciones en seis archivos: bootstrap, navegación, modelos, base local y repositories; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 52 pruebas/comprobaciones en siete archivos: bootstrap, navegación, modelos, base local, repositories y geolocalización; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
-- Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. Todavía no existe servicio de geolocalización, tracking GPS funcional ni flujos de caminatas.
+- Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. El servicio de geolocalización está probado con mocks, sin tracking funcional integrado con UI/persistencia ni flujos de caminatas.
 - Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
 - readonly no congela objetos en runtime; rangos, invariantes temporales, filtros, métricas y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.

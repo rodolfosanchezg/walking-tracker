@@ -4,9 +4,57 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T08 — Crear repositories.
+T09 — Servicio de geolocalización.
 
-Estado: T08 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T08). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T08 data repositories. T09 no ha comenzado.
+Estado: T09 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T09). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T09 geolocation service. T10 no ha comenzado.
+
+## Servicio de geolocalización creado en T09
+
+Archivos: src/services/geolocation/geolocationService.ts y types.ts. createGeolocationService devuelve una API independiente de React, Dexie y repositories; puede recibir un adaptador watchPosition/clearWatch para pruebas. Sin acceso al navegador al importar ni iniciar observación al construir. El navegador se consulta únicamente en start.
+
+API pública:
+
+- start({ onPosition, onError }, options?: PositionOptions): boolean. Inicia una observación; false si ya existe una o la API no está disponible. Una llamada duplicada conserva los callbacks y opciones originales; para cambiarlos hay que detener e iniciar nuevamente.
+- stop(): void. Libera el watchId, incluido cero, y es seguro sin watcher activo o al repetirse. Permite reiniciar; callbacks tardíos de observaciones anteriores se ignoran. Garantía de un watcher por instancia del servicio; el futuro consumidor debe reutilizar una instancia.
+- RawPosition reutiliza los tipos de campos de TrackPoint y conserva latitude, longitude, altitude, accuracy, speed y timestamp. Altitud y velocidad conservan null; no se asignan id, walkId, calidad ni estimaciones. Accuracy sigue siendo medida numérica. No hay cálculos ni persistencia.
+
+Opciones centralizadas en DEFAULT_GEOLOCATION_OPTIONS, sobreescribibles en cada start:
+
+| Opción | Valor inicial | Motivo |
+|---|---|---|
+| enableHighAccuracy | true | Solicitar mayor precisión para caminar; no garantiza precisión y deberá validarse el consumo en dispositivo real. |
+| maximumAge | 0 ms | Solicitar posiciones actuales sin aceptar antigüedad de caché. |
+| timeout | Omitido | Mantener el valor nativo; no fijar un umbral propio todavía. Puede configurarse mediante PositionOptions. |
+
+Estos valores son ajustables, no parámetros definitivos de calidad, pérdida de señal o tracking. Referencia técnica: [W3C Geolocation, PositionOptions](https://www.w3.org/TR/geolocation/#position_options_interface).
+
+Errores normalizados: permission-denied (1), position-unavailable (2), timeout (3); se preservan code y message originales. unknown conserva códigos no reconocidos; unsupported/code null informa ausencia de API. No hay mensajes de UI, reintentos automáticos ni cambios de estado de caminata. Los errores GPS se entregan a onError; stop queda bajo control del consumidor. Excepciones síncronas inesperadas de un adaptador se propagan, restableciendo el estado para permitir reintentar.
+
+## Pruebas y verificación de T09
+
+17 pruebas nuevas en tests/geolocation.test.ts: inicio mediante mock de navigator.geolocation, defaults y configuración, normalización, nulls, ceros, tres errores estándar y desconocido, clearWatch con ID cero, cleanup repetido, prevención de duplicados, reinicio y callbacks antiguos, API ausente, entorno sin navigator, inyección, excepción síncrona y stop desde callback síncrono. afterEach detiene el servicio y restaura los globals simulados. No requieren GPS real.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 52 pruebas en 7 archivos, 3.22 s; 35 previas preservadas. |
+| Build | PASS | 30 módulos, 287 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 y npm 11.19.0.
+
+Sin dependencias adicionales ni desviaciones arquitectónicas. Se retira .gitkeep de geolocation al incorporar fuentes. Sin conexión UI, tracking funcional, persistencia, métricas, Page Visibility ni Wake Lock. Requisitos, decisiones, arquitectura y plan permanecen intactos. README actualizado durante el cierre formal con el servicio disponible, testing y T10 pendiente. Las pruebas con mocks no sustituyen la validación futura de permisos, precisión y consumo en iPhone. T10 no ha comenzado. Sin bloqueos.
+
+La revisión independiente de Valerio aprobó los 28 criterios de T09, con 52 pruebas PASS, build, lint, TypeScript y git diff --check correctos. Confirmó mediante una comprobación adicional con mocks duplicados, stop repetido, reinicio con nuevo watchId, callbacks tardíos y errores desconocidos. Sin defectos ni bloqueos.
+
+Validación final de cierre de T09: npm test -- --run PASS (52 pruebas, 7 archivos, 3.27 s); npm run build PASS (30 módulos, 325 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T10 sin iniciar.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T08
+
+T08 ejecutada, aprobada por QA (Valerio: PASS — READY TO CLOSE T08) y cerrada en bb49a31 (feat: complete T08 data repositories).
 
 ## Repositories creados en T08
 
@@ -427,6 +475,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T09; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T10; Senior Developer únicamente tras esa autorización.
 
-T08 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Repositories y operaciones documentados; pruebas validadas. README actualizado durante el cierre formal. T09 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T09 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Servicio, opciones, errores y pruebas documentados. README actualizado durante el cierre formal. T10 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

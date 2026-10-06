@@ -163,3 +163,22 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Sin dependencias nuevas ni integración UI, tracking, métricas, filtros o recuperación. Walk.delete no añade cascadas; políticas coordinadas pendientes de etapas funcionales. T09 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Sin bloqueos.
 
 Validación final de cierre de T08: npm test -- --run PASS (35 pruebas, 6 archivos, 2.55 s); npm run build PASS (30 módulos, 309 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T09 sin iniciar.
+
+## T09 — Servicio de geolocalización — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T09. Los 28 criterios fueron aprobados; sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Encapsulación y ciclo de vida | PASS | watchPosition/clearWatch, watcher único por instancia, reinicio, cleanup idempotente y callbacks tardíos ignorados. |
+| Datos originales | PASS | Campos compatibles con TrackPoint, nulls y ceros preservados; sin walkId, calidad, estimaciones ni métricas. |
+| Opciones | PASS | High accuracy true, maximumAge 0, timeout omitido; configurables por start. |
+| Errores | PASS | Permiso denegado, posición no disponible, timeout; unknown/unsupported y errores síncronos contemplados. |
+| Tests | PASS | 52 pruebas, 7 archivos, 3.22 s; 17 nuevas con mocks y 35 previas. Globals restaurados al finalizar. |
+| Build | PASS | 30 módulos, 287 ms, salida 0. |
+| Lint / TypeScript | PASS | Lint salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; sin modificaciones de UI, datos, modelos, README o documentos fuente. |
+
+Sin dependencias adicionales ni GPS real. Sin tracking funcional, persistencia, Page Visibility o Wake Lock. Limitaciones de permisos y dispositivo real pendientes de tareas posteriores. T10 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Sin bloqueos.
+
+Validación final de cierre de T09: npm test -- --run PASS (52 pruebas, 7 archivos, 3.27 s); npm run build PASS (30 módulos, 325 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T10 sin iniciar.
