@@ -4,9 +4,54 @@ Fecha: 2026-10-06 (America/Bogota).
 
 ## Tarea ejecutada
 
-T11 — Servicio de Wake Lock.
+T12 — Implementar cálculo de distancia.
 
-Estado: T11 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T11). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T11 wake lock service. T12 no ha comenzado.
+Estado: T12 CLOSED; ejecutada y aprobada por QA (Valerio: PASS — READY TO CLOSE T12). Cierre formal autorizado por el usuario con el mensaje de commit feat: complete T12 distance calculation. T13 no ha comenzado.
+
+## Distancia implementada en T12
+
+src/domain/metrics/distance.ts contiene funciones puras, sin dependencias runtime de React, Dexie, repositories o APIs del navegador. Solo importa TrackPoint como tipo.
+
+API pública:
+
+- Coordinates: campos readonly latitude/longitude reutilizados de TrackPoint.
+- calculateDistanceMeters(from: Coordinates, to: Coordinates): number | null. Distancia horizontal en metros mediante Haversine, modelo esférico con radio medio 6 371 000 m; null para coordenadas no finitas o fuera de latitude [-90, 90] / longitude [-180, 180]. No confunde entradas inválidas con distancia cero.
+- calculateAccumulatedDistanceMeters(points: readonly TrackPoint[]): number. Suma segmentos consecutivos elegibles en el orden recibido; devuelve 0 para secuencia vacía, un punto o ausencia de segmentos elegibles. No modifica, clasifica ni ordena puntos.
+
+Reglas de participación sin umbrales nuevos:
+
+- Puntos medidos (estimated false), quality valid o suspicious y coordenadas seguras participan. D2 permite utilizar suspicious normalmente.
+- anomalous se excluye según RQ-DATA-002/D2. low-quality queda pendiente de evaluación según D1 y no participa provisionalmente. estimated queda fuera de esta distancia medida; no se mezcla estimación sin identificarla.
+- Cada punto excluido corta el segmento; no se conecta el punto anterior con el siguiente a través del hueco. Esta función no implementa interpolación o tratamiento de interrupciones, previstos en tareas posteriores; puede devolver un subtotal medido menor que la ruta completa.
+- No se suman segmentos entre walkId distintos. No se implementan reglas de pausa, coherencia temporal o duración; el consumidor futuro debe proporcionar la secuencia pertinente.
+
+Haversine calcula distancia superficial esférica, sin elevación ni corrección elipsoidal. El término intermedio se limita numéricamente a [0, 1] para evitar NaN por redondeo cerca de antípodas. Maneja naturalmente el cruce del meridiano 180. Referencia: [Chris Veness, cálculo geodésico Haversine](https://www.movable-type.co.uk/scripts/latlong.html).
+
+## Pruebas y verificación de T12
+
+21 pruebas en tests/distance.test.ts: puntos iguales, referencia ecuatorial de 0.001 grados (~111.195 m, tolerancia 0.005 m para el modelo esférico), coordenadas de Bogotá negativas, acumulación, secuencia vacía/un punto, anomalous intermedio, suspicious/low-quality, estimated, repetidos, antimeridiano, antípodas/polos, ocho entradas no finitas/fuera de rango, objetos/array congelados y separación de caminatas. No requieren navegador ni datos reales.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 102 pruebas en 10 archivos, 4.76 s; 81 previas preservadas. |
+| Build | PASS | 30 módulos, 302 ms, salida 0. |
+| Lint | PASS | Salida 0. |
+| TypeScript | PASS | tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node 24.21.0 / npm 11.19.0.
+
+Sin dependencias nuevas, desviaciones arquitectónicas ni bloqueos. Se retira .gitkeep de metrics al incorporar fuentes. Vitest conserva sugerencia informativa de rendimiento jsdom. README actualizado en el cierre formal con distancia, fórmula/unidad, testing, T00–T12 y T13 pendiente. Documentos fuente intactos. Sin UI, velocidad, ritmo, conversión de presentación, elevación, filtrado avanzado, clasificación ni estimación. Los parámetros de calidad y tratamiento de huecos siguen pendientes de tareas posteriores; no se fijan en T12. T13 no ha comenzado.
+
+La revisión independiente de Valerio aprobó los 21 criterios de T12: funciones puras, fórmula/unidad, exclusión de anómalos, no mutación y casos borde, alcance y documentación; 102 pruebas, build, lint, TypeScript y git diff --check PASS. Contrastó cinco pares mediante una fórmula vectorial independiente, con diferencia inferior a 0.001 m respecto al mismo modelo esférico. Sin defectos ni bloqueos.
+
+Validación final de cierre de T12: npm test -- --run PASS (102 pruebas, 10 archivos, 4.71 s); npm run build PASS (30 módulos, 328 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T13 sin iniciar.
+
+El cierre incluye comprobación de git status y git log -1 --oneline después del commit.
+
+## Historial de T11
+
+T11 ejecutada, aprobada por QA y cerrada en 9f31a62 (feat: complete T11 wake lock service).
 
 ## Servicio de Wake Lock creado en T11
 
@@ -563,6 +608,6 @@ Verificaciones documentales y del repositorio descritas en [TEST-PLAN.md](TEST-P
 
 ## Handoff
 
-Siguiente responsable: usuario para autorizar T12; Senior Developer únicamente tras esa autorización.
+Siguiente responsable: usuario para autorizar T13; Senior Developer únicamente tras esa autorización.
 
-T11 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Servicio, soporte/fallback, release y pruebas documentados y validados. README actualizado en el cierre formal. T12 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.
+T12 ejecutada, aprobada por QA y cerrada mediante commit autorizado. Distancia, fórmula/unidad, exclusiones y pruebas documentadas y validadas. README actualizado en el cierre formal. T13 no ha comenzado y requiere autorización posterior. Sin cambios de requisitos, decisiones, arquitectura ni plan de implementación.

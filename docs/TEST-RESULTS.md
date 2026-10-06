@@ -219,3 +219,21 @@ Verificación del Senior Developer y revisión independiente aprobada por Valeri
 Primera ejecución: 1 prueba falló al normalizar DOMException; se corrigió la lectura de nombre/mensaje y la suite completa pasó. Sin dependencias nuevas ni bloqueos; sugerencia informativa de rendimiento jsdom. Sin integración con Settings, UI, visibility, tracking o persistencia. T12 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados.
 
 Validación final de cierre de T11: npm test -- --run PASS (81 pruebas, 9 archivos, 4.45 s); npm run build PASS (30 módulos, 328 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T12 sin iniciar.
+
+## T12 — Implementar cálculo de distancia — 2026-10-06
+
+Verificación del Senior Developer y revisión independiente aprobada por Valerio: PASS — READY TO CLOSE T12. Los 21 criterios fueron aprobados; sin defectos ni bloqueos.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Distancia pura / unidad | PASS | Haversine esférico, metros; null para coordenadas inválidas. |
+| Acumulación / calidad | PASS | Segmentos consecutivos medidos valid/suspicious; anomalous/low-quality/estimated excluidos, sin interpolar huecos. |
+| Casos borde / no mutación | PASS | Vacío/un punto, ceros/repetidos, negativos, antimeridiano, antípodas/polos, coordenadas no finitas/fuera de rango y entradas congeladas. |
+| Tests | PASS | 102 pruebas, 10 archivos, 4.76 s; 21 nuevas y 81 previas. |
+| Build | PASS | 30 módulos, 302 ms, salida 0. |
+| Lint / TypeScript | PASS | Salida 0; tsc -b --force sin errores. |
+| Whitespace / alcance | PASS | git diff --check aprobado; README/documentos fuente/UI/modelos/datos intactos. |
+
+Sin dependencias nuevas ni bloqueos. Distancia medida sin estimación, sin velocidad/ritmo/elevación/conversiones ni clasificación avanzada. T13 no ha comenzado. Cierre formal autorizado; README, CURRENT_STATE y estado de AGENTS actualizados. Limitaciones y reglas de participación detalladas en CURRENT_STATE.
+
+Validación final de cierre de T12: npm test -- --run PASS (102 pruebas, 10 archivos, 4.71 s); npm run build PASS (30 módulos, 328 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Node 24.21.0 / npm 11.19.0. Documentos fuente intactos y T13 sin iniciar.

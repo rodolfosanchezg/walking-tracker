@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T11 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
+T00–T12 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, la estructura, el testing y la navegación SPA están operativos; los modelos TypeScript y la base Dexie sobre IndexedDB versión 1 están definidos. Las cinco vistas contienen únicamente estructura y placeholders, sin lógica funcional de caminatas.
 
-La siguiente tarea pendiente es **T12 — Distancia**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. Cálculos de métricas, mapas, gráficos e historial/configuración funcional siguen pendientes.
+La siguiente tarea pendiente es **T13 — Tiempo, velocidad y ritmo**. No ha comenzado y requiere autorización del usuario. La persistencia local cuenta con cuatro repositories probados que encapsulan Dexie/IndexedDB. Los servicios de geolocalización, Page Visibility y Wake Lock están disponibles y probados con mocks; todavía no existe tracking funcional integrado con UI/persistencia. El cálculo puro de distancia está implementado. Velocidad, ritmo y conversiones de presentación todavía no están implementados; mapas, gráficos e historial/configuración funcional siguen pendientes.
 
-Estado del repositorio tras T11: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock y 81 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
+Estado del repositorio tras T12: router/layout, cinco páginas base, tipos independientes, base local versión 1, cuatro repositories, servicios de geolocalización, visibilidad y Wake Lock más cálculo de distancia y 102 pruebas/comprobaciones. Las capas funcionales pendientes permanecen reservadas mediante `.gitkeep`.
 
 ## Stack y dependencias instaladas
 
@@ -28,7 +28,8 @@ Estado del repositorio tras T11: router/layout, cinco páginas base, tipos indep
 - `src/services/geolocation/`: observación de posiciones y errores, con inicio/detención y sin integración UI.
 - `src/services/visibility/`: lectura de visibilidad, suscripción a cambios y cleanup independiente.
 - `src/services/wakeLock/`: soporte, solicitud/liberación de bloqueo de pantalla, estado y notificaciones de release.
-- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks.
+- `src/domain/metrics/distance.ts`: distancia entre coordenadas y acumulación medida mediante funciones puras.
+- `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculo de distancia.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
 - `AGENTS.md`: instrucciones de trabajo para agentes.
@@ -64,7 +65,7 @@ src/
 │   │   └── index.ts
 │   └── migrations/
 ├── domain/
-│   ├── metrics/
+│   ├── metrics/distance.ts
 │   ├── elevation/
 │   ├── filtering/
 │   └── estimation/
@@ -83,7 +84,7 @@ src/
 └── index.css
 ```
 
-Las 10 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos y los tres servicios del navegador ya contienen implementación. Métricas, integraciones funcionales y migraciones futuras siguen pendientes.
+Las 9 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Tiempo, velocidad, ritmo, otras métricas, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -119,7 +120,7 @@ createGeolocationService encapsula navigator.geolocation.watchPosition y clearWa
 
 RawPosition conserva latitude, longitude, altitude, accuracy, speed y timestamp, incluidos nulls en altitud/velocidad y valores cero. No asigna walkId, identidad, calidad definitiva ni estimaciones. Los errores se normalizan como permission-denied, position-unavailable y timeout; también contempla unknown y unsupported, sin mensajes de UI.
 
-Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. Todavía no existe tracking funcional integrado con UI/persistencia, cálculo de métricas ni integración con Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
+Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. Todavía no existe tracking funcional integrado con UI/persistencia, integración con métricas ni con Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
 
 ## Servicio de Page Visibility disponible
 
@@ -138,6 +139,16 @@ Las operaciones se serializan por instancia para evitar locks duplicados. La lib
 La ausencia de API y los fallos devuelven WakeLockResult con error normalizado, sin mensajes de UI. Si falla release, se conserva la referencia para permitir reintentar; el consumidor debe revisar el resultado. Soporte y políticas en iPhone siguen pendientes de validación real.
 
 Geolocalización, Page Visibility y Wake Lock todavía no están integrados en un flujo funcional de tracking. Wake Lock no lee Settings ni está conectado a Active Walk; tampoco implementa comportamiento ante cambios de visibilidad.
+
+## Cálculo de distancia implementado
+
+src/domain/metrics/distance.ts expone calculateDistanceMeters(from, to) y calculateAccumulatedDistanceMeters(points). Son funciones puras, independientes de React, persistencia y APIs del navegador; no modifican ni ordenan los puntos originales.
+
+Usan Haversine sobre una esfera de radio medio 6 371 000 m y devuelven metros. La distancia entre coordenadas inválidas devuelve null; la acumulación vacía o sin segmentos elegibles devuelve 0. Es distancia horizontal, sin elevación ni corrección elipsoidal.
+
+La acumulación acepta puntos medidos valid y suspicious con coordenadas seguras. Excluye anomalous, low-quality pendiente de evaluación y estimated. Los puntos excluidos cortan el segmento, sin conectar a través del hueco ni mezclar walkId distintos. El resultado es un subtotal medido; la estimación de huecos queda para tareas posteriores.
+
+Las pruebas cubren referencias geográficas aproximadas, acumulación, exclusiones, repetidos, coordenadas negativas, antimeridiano, estabilidad numérica y entradas congeladas. Velocidad, ritmo y conversiones de presentación todavía no están implementados.
 
 ## Modelos TypeScript definidos
 
@@ -193,7 +204,7 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 81 pruebas/comprobaciones en nueve archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad y Wake Lock; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 102 pruebas/comprobaciones en diez archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock y distancia; para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
