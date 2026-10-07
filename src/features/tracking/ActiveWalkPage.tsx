@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { activeWalkRuntime } from './activeWalkRuntime'
 import type { ActiveWalkRuntime } from './activeWalkRuntime'
 import { useActiveWalk } from './useActiveWalk'
 import { metersToKilometers, metersPerSecondToKilometersPerHour, secondsPerKilometerToMinutesPerKilometer } from '../../domain/metrics/conversions'
+
+const ActiveWalkMap = lazy(() => import('../maps/ActiveWalkMap'))
 
 const states = { idle: 'Sin caminata', active: 'Activa', paused: 'Pausada', incomplete: 'Incompleta', finished: 'Finalizada', cancelled: 'Cancelada' }
 const qualities = { valid: 'Válida', 'low-quality': 'Baja precisión', suspicious: 'Sospechosa', anomalous: 'Anómala', estimated: 'Estimada' }
@@ -47,6 +49,7 @@ export default function ActiveWalkPage({ runtime = activeWalkRuntime }: { runtim
         <div><dt>Elevación ganada</dt><dd>{number(metrics.elevationGainMeters.value, 'm')}{metrics.elevationGainMeters.estimated && ' (estimada)'}</dd></div>
         <div><dt>Elevación perdida</dt><dd>{number(metrics.elevationLossMeters.value, 'm')}{metrics.elevationLossMeters.estimated && ' (estimada)'}</dd></div>
       </dl>}
+      <Suspense fallback={<p>Cargando mapa…</p>}><ActiveWalkMap snapshot={snapshot} /></Suspense>
       <div className="walk-controls">
         <button type="button" onClick={start} disabled={finishing || !(status === 'idle' || completed)}>Iniciar caminata</button>
         <button type="button" onClick={status === 'paused' ? resume : pause} disabled={finishing || !['active', 'paused'].includes(status)}>{status === 'paused' ? 'Reanudar' : 'Pausar'}</button>

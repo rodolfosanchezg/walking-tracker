@@ -4,9 +4,48 @@ Fecha: 2026-10-07 (America/Bogota).
 
 ## Tarea ejecutada
 
-T19 — Active Walk View.
+T20 — Integración Leaflet.
 
-Estado: T19 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio PASS — READY TO CLOSE T19. T20 no ha comenzado. T21–T28 no se implementan en esta entrega.
+Estado: T20 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio PASS — READY TO CLOSE T20. T21 no ha comenzado; T22–T28 fuera del alcance.
+
+## Mapa activo implementado en T20
+
+src/features/maps/ActiveWalkMap.tsx encapsula Leaflet1.9.4 y su CSS, sin React-Leaflet ni dependencias nuevas. ActiveWalkPage carga el componente mediante lazy/Suspense, separando Leaflet del bundle inicial. Tamaño explícito320px móvil/400px desktop. Instancia única por montaje: remove al desmontar, listeners y ResizeObserver retirados; no solicita GPS ni accede a persistencia.
+
+mapData.ts adapta TrackingSnapshot.rawPoints y CapturedPoint.assessment/segment de T17. Ruta elegible: medidos valid/suspicious con coordenadas finitas dentro de rango; anomalous/low-quality/estimated se excluyen y cortan continuidad conforme T12. segment=null no participa; IDs distintos producen subrutas independientes. Esto excluye puntos pausados/antiguos y evita conectar movimiento durante pausa, sin alterar raw ni clasificaciones. Las posiciones antiguas fuera de segmento no cortan innecesariamente el segmento activo que T17 conserva.
+
+Polyline multi-segmento azul reutilizada mediante setLatLngs. CircleMarker rojo/blanco reutilizado para la última posición apta, diferenciada de la ruta y con tooltip. Puede mostrar la posición raw válida durante pausa sin extender ruta ni seguirla automáticamente. Ante GPS perdido o último punto excluido conserva la última posición válida conocida; no estima nuevos puntos. Sin puntos muestra vista mundial [0,0]/zoom2 y texto esperando ubicación; primer punto centra azoom16.
+
+Follow inicialmente habilitado: panTo sin animación únicamente al cambiar ID de posición y mientras active; no fitBounds por cada punto. Pointer/wheel/keyboard dentro del mapa suspenden follow; botón Centrar y seguir posición lo reactiva. Pan/zoom Leaflet siguen disponibles. Finish conserva ruta/marker y fitBounds una vez con padding20/maxZoom16. ZoomAnimation desactivado para evitar que un zoom manual pendiente impida aplicar el ajuste final; no usa APIs privadas de Leaflet en producción.
+
+mapConfig.ts centraliza URL HTTPS raster de OpenStreetMap, atribución visible y maxZoom19. Los documentos aprobaban raster/Leaflet pero no especificaban proveedor: elección inicial configurable, sin cambiar arquitectura ni decisiones. Referencia de política: https://operations.osmfoundation.org/policies/tiles/ . No hay descarga, prefetch, Service Worker ni caché administrada; solo comportamiento HTTP nativo del navegador. tileerror muestra aviso sin detener GPS, persistencia ni controles. Mapas offline completos siguen fuera del MVP.
+
+## Pruebas y validación T20 — 2026-10-07
+
+14 casos nuevos en tests/activeWalkMap.test.tsx: integración /walk, inicial vacío, instancia única/cleanup, posición inicial/actualizada, polyline, tres calidades excluidas, anomalía intermedia, pausa/resume con subrutas, coordenadas inválidas/no mutación, seguimiento manual/reactivación, finish y tileerror. Leaflet mockeado en estas pruebas; sin internet real. Pruebas T19 conservadas; una aserción de disabled se ajustó a los tres controles de caminata, ya que el zoom del mapa debe permanecer usable.
+
+| Validación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 308 pruebas,19 archivos,7.53 s;294 previas y14 nuevas; incluye QA-T17-001/QA-T18-001. |
+| Build | PASS | 55 módulos,385 ms; bundle inicial382.31kB y mapa separado152.02kB; sin aviso de tamaño final. |
+| Lint / TypeScript | PASS | npm run lint y tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+| Navegador | PASS | Chrome real headless/CDP,390x844, GPS y tiles simulados. Mapa sin GPS, posición/ruta, drag suspende follow, zoom, pausa sin extensión, resume sin watcher duplicado, finish tras zoom muestra dos subrutas sin puente y marcador final. HTTP503 de tiles simulado mantiene tracking/controles. Sin overflow ni excepciones JS/Leaflet. |
+
+Hallazgos corregidos durante desarrollo: prueba T19 asumía todos los botones disabled, ahora limita a acciones de caminata; primer build534kB avisó tamaño, solucionado con carga lazy; fitBounds podía ser ignorado durante zoom animado, corregido desactivando zoomAnimation. Chrome conservó una instancia con configuración antigua tras edición; recarga completa verificó la opción nueva y el caso final. Se conserva esta evidencia sin afirmar que las primeras comprobaciones finales pasaron.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Vite/Chrome levantados con permisos para puerto local; perfil /tmp aislado, scripts CDP externos. Verificación de navegador automatizada, sin afirmar GPS real/iPhone ni tiles reales de Internet.
+
+Sin bloqueos ni dependencias nuevas. Limitaciones: proveedor raster público sin garantía offline; aviso de tileerror conservado durante montaje; calidad avanzada por colores/raw secondary layer no implementados; GPS real/iPhone y rendimiento de caminatas largas pendientes. Se retiró maps/.gitkeep porque ya contiene implementación. README actualizado en el cierre formal para T00–T20, capacidades, limitaciones y T21 pendiente; cuatro documentos fuente intactos. No Chart.js, Recovery, Visibility/Wake Lock ni T21.
+
+QA independiente de Valerio: PASS — READY TO CLOSE T20. Aprobó inicialización única, limpieza, marker, polyline, anomalías, pausa/reanudación sin puente, follow/pan/zoom, tiles independientes y regresión T19; sin defectos confirmados. 308 pruebas (19 archivos,7.44 s), build (550 ms), lint/TypeScript/diff PASS. Chrome/CDP390x844 con GPS/tiles simulados verificó A–E: A/B activos permanecen, C/D pausados no extienden ruta, E/F en nuevo segmento; anomalía excluida de ruta/marker; finish con bounds completos, incluyendo cero/un punto sin excepción. Sin errores JS/Leaflet/overflow. Tiles reales/GPS real/iPhone y rendimiento largo no probados. T21 no ha comenzado.
+
+
+Validación final de cierre de T20: Node24.21.0/npm11.19.0; npm test -- --run PASS (308 pruebas,19 archivos,7.87 s); pruebas Leaflet, regresión T19, pausa/resume sin puente y cleanup aprobados. npm run build PASS (55 módulos,369 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó ausencia de Chart.js funcional/T21 y cambios a documentos fuente; T16–T19 runtime y capas inferiores intactos salvo integración visual/prueba de controles autorizadas. Se verifican git status y git log -1 --oneline después del commit.
+
+## Historial de T19
+
+T19 aprobada y cerrada en a74f0a6 (feat: complete T19 active walk view). QA PASS — READY TO CLOSE T19, sin defectos confirmados. Evidencia histórica preservada a continuación.
 
 ## Vista activa implementada en T19
 

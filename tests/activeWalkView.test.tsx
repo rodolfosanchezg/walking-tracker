@@ -88,7 +88,7 @@ test.each([['permission-denied', 'Permiso de ubicación denegado'], ['position-u
 test('acciones deshabilitadas mientras finaliza', async () => {
   const f = fixture(); render(<ActiveWalkPage runtime={f.runtime} />); click('Iniciar caminata'); f.busy(); await poll()
   expect(screen.getByRole('status')).toHaveTextContent('Finalizando')
-  for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled()
+  for (const name of ['Iniciar caminata', 'Pausar', 'Finalizar']) expect(screen.getByRole('button', { name })).toBeDisabled()
 })
 test('desmontaje limpia timer; remontaje conserva sesión sin otro start', async () => {
   const f = fixture(); const first = render(<ActiveWalkPage runtime={f.runtime} />); click('Iniciar caminata'); await poll()

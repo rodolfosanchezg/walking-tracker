@@ -455,3 +455,37 @@ Validación independiente en Chrome real/CDP con GPS simulado a390x844: inicial 
 Cierre formal autorizado; CURRENT_STATE y README actualizados. Sin cambios a requisitos/decisiones/arquitectura/plan ni implementación de T20–T28. GPS real/iPhone y rendimiento de caminatas largas permanecen pendientes.
 
 Validación final de cierre de T19: Node24.21.0/npm11.19.0; npm test -- --run PASS (294 pruebas,18 archivos,6.86 s); npm run build PASS (50 módulos,339 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T20 sin iniciar: sin imports Leaflet/Chart.js en UI/runtime; T16–T18 y documentos fuente intactos. Se verifican git status y git log -1 --oneline después del commit.
+
+
+## T20 — Integración Leaflet — 2026-10-07
+
+Verificación de Aurelio; pendiente de QA/cierre, sin commit. T21 no ha comenzado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Mapa/posición/ruta | PASS | Inicial sin GPS, marker diferenciado, actualización sin recrear instancia/polyline. |
+| Clasificación/segmentos | PASS | Exclusión anomalous/low-quality/estimated; pausa sin ruta, resume separado, coordenadas seguras/no mutación. |
+| Interacción/final | PASS | Drag/wheel/keyboard suspende follow, botón reactiva, zoom disponible, fitBounds final conserva dos subrutas/marker. |
+| Tiles/cleanup | PASS | tileerror no detiene tracking; remove/listeners/observer al desmontar. |
+| Tests | PASS | 308 pruebas,19 archivos,7.53 s;14 nuevas y294 anteriores, regresiones T17/T18 incluidas. |
+| Build | PASS | 55 módulos,385 ms; lazy map152.02kB, inicial382.31kB; sin aviso de tamaño final. |
+| Lint / TypeScript / diff | PASS | Salida0 en npm run lint, tsc -b --force y git diff --check. |
+| Navegador | PASS | Chrome/CDP390x844 con GPS/tiles simulados; A–D, pan/zoom, pausa, final tras zoom, dos subrutas sin puente, tiles503 sin detener GPS. Sin overflow ni excepciones JS/Leaflet. |
+| Alcance | PASS | Sin Geolocation/persistencia en mapa, sin T21–T28, dependencias/README/fuentes intactos. |
+
+Primera suite293PASS/1FAIL por aserción T19 demasiado amplia (incluía zoom como acción de caminata); ajustada a Start/Pause/Finish. Build inicial534kB produjo aviso, resuelto con lazy. Comprobación final inicial mostró un segmento al ignorarse fitBounds durante zoom animado; desactivada esa animación y verificada tras recarga limpia (Chrome mantenía instancia anterior). Suite final/Chrome PASS. Se conserva historial de hallazgos.
+
+Pruebas nuevas: tests/activeWalkMap.test.tsx, Leaflet mockeado y sin Internet. Validación navegador con interceptación tiles/simulación GPS, sin cambios de producción para mocks. No equivale a prueba real iPhone/tiles online. Configuración raster OSM/atribución centralizada; no offline completo.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Vite/Chrome/CDP para prueba de navegador, con permisos para puerto local.
+
+
+## T20 — QA aprobada y cierre formal — 2026-10-07
+
+Valerio: PASS — READY TO CLOSE T20. Los35 criterios y regresión T19 aprobados; sin defectos confirmados ni bloqueos. 308 pruebas,19 archivos,7.44 s; build55 módulos/550 ms; lint, TypeScript y git diff --check PASS. Historial previo conservado.
+
+Cobertura: inicialización única/cleanup, marker reutilizado, polyline/orden, exclusión anomalías, pausa/resume sin puente, follow/pan/zoom, fitBounds y tile errors independientes del tracking. Chrome real/CDP390x844, GPS/tiles simulados, escenarios A–E: A/B visibles; C/D pausados fuera de ruta; E/F separados; anomalía sin salto; finish conserva ruta/posición y bounds completos. Finalizar con cero/un punto sin excepciones. Sin errores JS/Leaflet ni overflow. Tiles reales/GPS real/iPhone/rendimiento largo NOT TESTED.
+
+Cierre formal autorizado. README/CURRENT_STATE actualizados; sin modificar documentos fuente ni iniciar T21–T28. No dependencias nuevas ni funcionalidades adicionales.
+
+Validación final de cierre de T20: Node24.21.0/npm11.19.0; npm test -- --run PASS (308 pruebas,19 archivos,7.87 s); pruebas Leaflet, regresión T19, pausa/resume sin puente y cleanup aprobados. npm run build PASS (55 módulos,369 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó ausencia de Chart.js funcional/T21 y cambios a documentos fuente; T16–T19 runtime y capas inferiores intactos salvo integración visual/prueba de controles autorizadas. Se verifican git status y git log -1 --oneline después del commit.
