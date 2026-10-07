@@ -521,3 +521,35 @@ Cobertura: estados0/1/múltiples/null, datasets T15 distancia-altitud km/m, actu
 Cierre formal autorizado; README y CURRENT_STATE actualizados. No cambios a documentos fuente/T15 ni implementación de T22–T28. GPS real/iPhone/rendimiento largo NOT TESTED. Sin dependencias nuevas.
 
 Validación final de cierre de T21: Node24.21.0/npm11.19.0; npm test -- --run PASS (322 pruebas,20 archivos,8.18 s); Chart T21, lifecycle/destroy, pausa/resume y regresión T19/T20 aprobados. npm run build PASS (60 módulos,356 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T22 sin iniciar: Home permanece vista base; fuentes/T15/runtime/mapa intactos y sin T23–T28. Se verifican git status y git log -1 --oneline después del commit.
+
+
+## T22 — Home View — 2026-10-07
+
+Verificación de Aurelio; pendiente de QA/cierre, sin commit. T23 no ha comenzado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Inicial/navegación | PASS | Heading/title/Ready/Start; Link a /walk,/history,/settings; Start no crea sesión/GPS. |
+| Active/paused/finished | PASS | Estado de runtime; Start oculto/Open disponible; finished guardada habilita Start; incomplete/guardado pendiente protegidos. |
+| Ciclo de vida | PASS | Getter-only/polling1000ms; timer eliminado al desmontar; no start/stop/cleanup/refresh/tick desde Home. |
+| Tests | PASS | 332 pruebas,21 archivos,9.04 s;10 nuevos casos y322 anteriores. |
+| Build | PASS | 61 módulos,420 ms; salida0. |
+| Lint / TypeScript / diff | PASS | Salida0 en npm run lint, tsc -b --force, git diff --check. |
+| Navegador | PASS | Chrome/CDP A–D: inicial sin watcher, History/Settings, navegación a walk sin iniciar, active/paused/Open preservan watcher1 y estado, finish guardado vuelve a habilitar Start. |
+| Móvil/desktop | PASS | 390x844/1280x800, sin overflow ni errores de consola. |
+| Alcance | PASS | T19–T21/runtime/capas inferiores/fuentes/README intactos; no T23–T28 ni dependencias nuevas. |
+
+Pruebas nuevas: tests/homeView.test.tsx con RTL/MemoryRouter, reader mockeado y timers falsos. Browser separado con GPS/tiles simulados y perfil /tmp aislado; no validación de GPS real/iPhone ni recuperación tras reload. Start de Home navega a /walk y allí sigue controlado el inicio real; History/Settings permanecen vistas base.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Adicionales Vite dev/Chrome headless/CDP para navegador con permisos de puerto local.
+
+
+### QA independiente y cierre formal de T22 — 2026-10-07
+
+Valerio: STATUS: PASS — READY TO CLOSE T22. Sin defectos QA-T22 ni bloqueos. 332 pruebas PASS en 21 archivos (10 casos Home); build PASS, 61 módulos/362 ms; lint, TypeScript y git diff --check PASS. Cobertura Ready/Start, navegación, Active/Paused, protección contra segundo Start, Open Walk, polling/cleanup y Finished. La variante de inicio directo desde Home no aplica: Home solo navega. Regresión T19–T21 aprobada, incluidos errores GPS/persistencia, confirmación Finish, mapa y perfil.
+
+Evidencia de navegador: Chrome real mediante CDP y GPS/tiles simulados, sin interacción humana ni GPS real afirmados. Ready e History/Settings; doble click Start no inicia watcher. Tres ciclos /walk → / → /walk conservan sesión/distancia/perfil con starts=1, clears=0. Pausa conserva sesión/distancia/tiempo activo, sin distancia artificial al reanudar. Finish confirmado conserva mapa/perfil y produce watchers=0, clearWatch=1; Home vuelve a permitir Start. Tab accesible; 390×844/1280×800 sin overflow ni errores de consola. Errores de serialización/lectura asíncrona del harness QA fueron corregidos al reejecutar; no eran defectos del producto.
+
+Cierre formal autorizado por el usuario; CURRENT_STATE y README actualizados. Evidencia histórica anterior conservada. Sin funcionalidad nueva ni dependencias adicionales; fuentes intactas. T23–T28 no iniciadas.
+
+Validación final de cierre T22: Node 24.21.0/npm 11.19.0; 332 tests PASS en 21 archivos (9.34 s), incluidos Home, protección contra segundo Start, lifecycle y regresión T19–T21. Build PASS (61 módulos, 390 ms); lint PASS; tsc -b --force PASS; git diff --check PASS. Se confirmó T23 sin iniciar antes del commit: History conserva el placeholder y las fuentes permanecen intactas.

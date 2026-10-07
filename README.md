@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T21 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. /walk tiene una UI funcional; Inicio, Historial, Detalle y Configuración siguen siendo vistas base.
+T00–T22 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. Home en / y Active Walk en /walk son funcionales; Historial, Detalle y Configuración siguen siendo vistas base.
 
-La siguiente tarea pendiente es **T22 — Home View**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
+La siguiente tarea pendiente es **T23 — History View**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
 
-Estado del repositorio tras T21: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19 y Leaflet T20 y Chart.js T21; 322 pruebas/comprobaciones en 20 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
+Estado del repositorio tras T22: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19 y Leaflet T20 y Chart.js T21 y Home T22; 332 pruebas en 21 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
 
 ## Stack y dependencias instaladas
 
@@ -38,6 +38,7 @@ Estado del repositorio tras T21: base técnica, navegación, modelos, persistenc
 - `src/data/repositories/trackingPersistenceStore.ts`: transacción de Walk, puntos y sesión mediante repositories.
 - `src/features/tracking/activeWalkRuntime.ts`: composición T16–T18 y ciclo de vida de la sesión en memoria.
 - `src/features/tracking/useActiveWalk.ts`: polling de snapshot y cleanup de UI.
+- `src/features/tracking/useWalkStatus.ts`: lectura del runtime para Home, sin acciones de tracking.
 - `src/features/tracking/ActiveWalkPage.tsx`: estado, controles, métricas y errores en /walk.
 - `src/features/maps/`: ActiveWalkMap, adaptación de snapshot y configuración raster.
 - `src/features/tracking/ElevationProfile.tsx`: gráfico responsive con Chart.js, actualización y destroy.
@@ -63,6 +64,7 @@ src/
 │   │   ├── persistenceCoordinator.ts
 │   │   ├── persistentTrackingController.ts
 │   │   ├── activeWalkRuntime.ts
+│   │   ├── useWalkStatus.ts
 │   │   ├── useActiveWalk.ts
 │   │   ├── ElevationProfile.tsx
 │   │   └── elevationProfileData.ts
@@ -118,7 +120,7 @@ Las 6 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, 
 
 ## Persistencia local configurada
 
-La factory createDatabase define WalkingTracker mediante Dexie, reutilizando Walk, TrackPoint, ActiveSession y Settings. No abre conexiones al importar; la aplicación todavía no la consume.
+La factory createDatabase define WalkingTracker mediante Dexie, reutilizando Walk, TrackPoint, ActiveSession y Settings. No abre conexiones al importar; T19 la consume mediante el runtime persistente y repositories.
 
 Esquema versión 1:
 
@@ -168,7 +170,7 @@ Las operaciones se serializan por instancia para evitar locks duplicados. La lib
 
 La ausencia de API y los fallos devuelven WakeLockResult con error normalizado, sin mensajes de UI. Si falla release, se conserva la referencia para permitir reintentar; el consumidor debe revisar el resultado. Soporte y políticas en iPhone siguen pendientes de validación real.
 
-Geolocalización, Page Visibility y Wake Lock todavía no están integrados en un flujo funcional de tracking. Wake Lock no lee Settings ni está conectado a Active Walk; tampoco implementa comportamiento ante cambios de visibilidad.
+Geolocalización está integrada en el flujo activo mediante T17–T19. Page Visibility y Wake Lock siguen pendientes de integración funcional. Wake Lock no lee Settings ni está conectado a Active Walk; tampoco implementa comportamiento ante cambios de visibilidad.
 
 ## Cálculo de distancia implementado
 
@@ -252,7 +254,7 @@ Muestra tiempo activo/total, distancia en km, velocidad promedio en km/h, ritmo 
 
 Finish requiere confirmación; cancelarla conserva tracking. La acción confirmada usa flush/transacción final T18; solo muestra éxito tras persistencia confirmada. Ante fallo permite reintentar y conserva recovery state. El snapshot se actualiza cada segundo; desmontar elimina el timer de UI y mantiene el runtime por pestaña, sin duplicar watchers al volver. No recupera la sesión tras recargar.
 
-QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. T20 integra el mapa; T21 integra el perfil Chart.js. Permanecen pendientes recuperación interactiva (T26), Page Visibility (T27) y Wake Lock (T28); la siguiente tarea es T22.
+QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. T20 integra el mapa; T21 integra el perfil Chart.js. Permanecen pendientes recuperación interactiva (T26), Page Visibility (T27) y Wake Lock (T28); la siguiente tarea es T23.
 
 ## Mapa Leaflet integrado — T20
 
@@ -264,7 +266,7 @@ Tiles raster OpenStreetMap con atribución/configuración centralizada. Si no ca
 
 El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, posición, ruta y estado GPS, y mover/ampliar el mapa. QA aprobó T20 y regresión T19 con 308 pruebas; Chrome390x844 con GPS/tiles simulados confirmó pausa/resume, anomalía excluida, pan/zoom y finalización. Tiles reales de Internet, GPS real/iPhone y rendimiento de caminatas largas siguen pendientes de validación.
 
-Siguientes tareas pendientes: T22 Home funcional; T23 History; T24 Walk Detail; T25 Settings; T26 Recovery; T27 Page Visibility; T28 Wake Lock. No se han iniciado en esta entrega.
+Siguientes tareas pendientes: T23 History; T24 Walk Detail; T25 Settings; T26 Recovery; T27 Page Visibility; T28 Wake Lock. No se han iniciado en esta entrega.
 
 ## Perfil de elevación integrado — T21
 
@@ -272,9 +274,19 @@ Siguientes tareas pendientes: T22 Home funcional; T23 History; T24 Walk Detail; 
 
 Con menos de dos altitudes procesadas disponibles muestra estado vacío. Al llegar puntos actualiza datasets sin recrear la instancia, con animación desactivada. Pause conserva el perfil, Resume continúa con otro segmento y Finish mantiene perfil, mapa y métricas. Destroy al desmontar retira la instancia/listeners; T19/T20 siguen operativos.
 
-El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, mapa/ruta/posición actual y perfil distancia-altitud, conservando mapa/perfil después de Finish. Unidades métricas fijas; Settings aún no integrado. La recuperación interactiva T26, Page Visibility T27 y Wake Lock T28 siguen pendientes, junto a Home T22, History T23, Walk Detail T24 y Settings T25.
+El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, mapa/ruta/posición actual y perfil distancia-altitud, conservando mapa/perfil después de Finish. Unidades métricas fijas; Settings aún no integrado. La recuperación interactiva T26, Page Visibility T27 y Wake Lock T28 siguen pendientes, junto a History T23, Walk Detail T24 y Settings T25.
 
 QA aprobó T21 con 322 pruebas y Chrome390x844 con GPS/tiles simulados: actualización estable, pico vertical3000 excluido por T15, pausa/resume, interpolación marcada, dos desmontajes/remontajes y perfil final. GPS real/iPhone y rendimiento de caminatas largas todavía pendientes.
+
+## Home integrada — T22
+
+La entrada / muestra Inicio y el estado del runtime compartido mediante useWalkStatus/getView. Sin sesión activa indica Listo para caminar (Ready) y ofrece Iniciar caminata, que navega a /walk; el inicio real y la solicitud GPS ocurren allí. Ver historial y Abrir configuración conducen a /history y /settings mediante React Router.
+
+Con sesión active/paused muestra el estado textual, oculta un segundo Start y ofrece Abrir caminata (Open Walk). Navegar /walk → / → /walk conserva sesión, métricas y un único watcher. Finished vuelve a habilitar Start tras guardado exitoso; un guardado pendiente mantiene acceso para reintentar. Solo observa estado en memoria, sin recuperación tras recarga. Home no accede directamente a Geolocation, Dexie ni repositories, no calcula métricas y su cleanup elimina únicamente el temporizador de lectura.
+
+El usuario puede entrar desde Home, iniciar en Active Walk, volver a una sesión activa/pausada y consultar métricas, mapa/ruta/posición y perfil de elevación. QA aprobó T22 con 332 pruebas en 21 archivos, regresión T19–T21 y Chrome con GPS/tiles simulados en móvil/desktop.
+
+Siguiente tarea: **T23 — History View**, todavía no iniciada. History T23 no es funcional; Walk Detail T24, Settings T25, Recovery T26, Page Visibility T27 y Wake Lock T28 están pendientes. GPS real/iPhone y caminatas prolongadas siguen pendientes de validación.
 
 ## Modelos TypeScript definidos
 

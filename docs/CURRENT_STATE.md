@@ -4,9 +4,47 @@ Fecha: 2026-10-07 (America/Bogota).
 
 ## Tarea ejecutada
 
-T21 — Integración del perfil de elevación con Chart.js.
+T22 — Home View.
 
-Estado: T21 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio PASS — READY TO CLOSE T21. T22 no ha comenzado; T23–T28 fuera del alcance.
+Estado: T22 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio: PASS — READY TO CLOSE T22. T23 no ha comenzado; T24–T28 fuera del alcance.
+
+## Home implementada en T22
+
+src/app/HomePage.tsx convierte la ruta / existente en pantalla de entrada funcional. Conserva heading Inicio y título principal Walking Tracker del layout App. Acción principal, estado textual y accesos secundarios Ver historial/Abrir configuración; estilos mínimos coherentes con /walk, sin rediseño general.
+
+src/features/tracking/useWalkStatus.ts usa únicamente runtime.getView() mediante un contrato Pick<ActiveWalkRuntime,'getView'>. Lectura inicial y polling centralizado1000ms; elimina solo su temporizador al desmontar. No invoca start/stop/cleanup/refresh/tick, no calcula métricas en React ni usa Geolocation/Dexie/repositories. No consulta persistencia al abrir ni reconstruye sesiones; observa exclusivamente la instancia en memoria ya disponible. T19–T21/controladores/capas inferiores permanecen intactos.
+
+Sin sesión muestra Listo para caminar y Link Iniciar caminata a /walk. Ese enlace NO inicia GPS ni crea sesión; la acción real permanece en Active Walk/T19. Los accesos /history y /settings usan Link/React Router existente, sin window.location ni navegación externa/base path hardcoded.
+
+Con active/paused muestra Caminata activa en progreso/Caminata pausada, oculta Start y ofrece Abrir caminata a /walk. No crea segundo mecanismo de inicio ni segunda sesión. También protege incomplete y finished con persistencia aún pendiente, mostrando acceso para revisar/reintentar en /walk en lugar de un Start incoherente. Mientras finishing, indica Guardando la caminata. Finished con persistence.finalized=true muestra finalizada/listo para otra caminata y vuelve a ofrecer Iniciar. No incorpora resumen histórico ni recuperación interactiva T26.
+
+Navegar /walk→Home→/walk no cancela tracking, limpia sesión ni duplica watcher. El temporizador Home solo lee estado; el runtime existente conserva sesión/GPS. Accesibilidad: heading, role=status, enlaces con labels claros y foco visible/altura44px; Home no depende de iconos/color y ajusta su navegación a dos columnas en móvil/desktop.
+
+## Pruebas y verificación T22 — 2026-10-07
+
+10 casos nuevos en tests/homeView.test.tsx con RTL/MemoryRouter, reader mockeado y timers falsos: render/título/Ready/Start, tres destinos, active/paused/Open/protección de segundo Start, finished guardada, finished pendiente/incomplete, lectura actualizada, timer cleanup y ausencia de llamadas a acciones de tracking.
+
+| Validación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 332 pruebas,21 archivos,9.04 s;322 anteriores y10 T22; regresiones T19–T21/QA-T17-001/QA-T18-001 incluidas. |
+| Build | PASS | 61 módulos,420 ms; salida0. |
+| Lint / TypeScript | PASS | npm run lint/tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+| Navegador | PASS | Chrome real headless/CDP con GPS/tiles simulados. A Ready/History/Settings/Start→walk sin watcher; B active en Home, Start oculto/Open conserva watcher1; C paused en Home/Open conserva pausa; D finish guardado habilita Start, watcher0. Mobile390x844 y desktop1280x800 sin overflow/errores de consola. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Vite/Chrome/CDP con perfil /tmp aislado y permisos de puerto local; validación automatizada sobre navegador real, sin GPS real ni interacción humana afirmada.
+
+Sin hallazgos bloqueantes, desviaciones ni dependencias nuevas. Limitaciones: Start de Home abre /walk y requiere iniciar allí; estado solo en memoria (reload/recoveryT26 pendiente); History/Settings continúan vistas base; comportamiento de tracking al salir de /walk sigue el runtime/T19 existente, sin timers funcionales nuevos de persistencia ni background. README actualizado durante el cierre formal; los cuatro documentos fuente permanecen intactos. No T23/T24/T25/T26/T27/T28. T23 no ha comenzado.
+
+## QA y cierre formal de T22
+
+Valerio aprobó T22 con 332 pruebas PASS en 21 archivos; regresión T19–T21 aprobada, sin defectos ni bloqueos. Chrome/CDP con GPS/tiles simulados confirmó Ready, navegación History/Settings, doble click Start sin watcher, tres ciclos /walk → / → /walk con una única sesión y watcher, pausa conservando distancia/tiempo activo y Finish persistido liberando el watcher y habilitando nuevamente Start. Viewports 390×844 y 1280×800 sin desbordamiento ni errores de consola. GPS real/iPhone/caminatas prolongadas siguen pendientes. El cierre agrega únicamente documentación; T23 no ha comenzado.
+
+Validación final de cierre T22: Node 24.21.0/npm 11.19.0; 332 tests PASS en 21 archivos (9.34 s), incluidos Home, protección contra segundo Start, lifecycle y regresión T19–T21. Build PASS (61 módulos, 390 ms); lint PASS; tsc -b --force PASS; git diff --check PASS. Se confirmó T23 sin iniciar antes del commit: History conserva el placeholder y las fuentes permanecen intactas.
+
+## Historial de T21
+
+T21 aprobada/cerrada en39cb4a4 (feat: complete T21 elevation profile). QA PASS — READY TO CLOSE T21; evidencia histórica preservada a continuación.
 
 ## Perfil integrado en T21
 
