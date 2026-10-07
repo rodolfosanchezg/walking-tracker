@@ -66,3 +66,19 @@ a:focus-visible {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.walk-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.walk-metrics div { padding: 0.75rem; background: #f1f5f8; border-radius: 0.25rem; }
+.walk-metrics dd { margin: 0.25rem 0 0; font-weight: 600; }
+.walk-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.walk-controls button, .walk-confirmation button {
+  min-height: 44px; padding: 0.5rem 0.75rem; font: inherit; cursor: pointer;
+}
+button:disabled { cursor: default; opacity: 0.6; }
+button:focus-visible { outline: 3px solid #164e80; outline-offset: 3px; }
+.walk-confirmation { margin-top: 1rem; padding: 1rem; border: 2px solid #164e80; }
+[role='alert'] { padding: 0.75rem; border-left: 4px solid #9d240c; background: #fff3ef; }

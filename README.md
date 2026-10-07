@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T18 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. Las cinco vistas siguen siendo placeholders.
+T00–T19 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. /walk tiene una UI funcional; Inicio, Historial, Detalle y Configuración siguen siendo vistas base.
 
-La siguiente tarea pendiente es **T19 — Active Walk view**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; todavía no conecta UI.
+La siguiente tarea pendiente es **T20 — Integración Leaflet**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
 
-Estado del repositorio tras T18: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18; 278 pruebas/comprobaciones en 17 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
+Estado del repositorio tras T19: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19; 294 pruebas/comprobaciones en 18 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
 
 ## Stack y dependencias instaladas
 
@@ -21,11 +21,11 @@ Estado del repositorio tras T18: base técnica, navegación, modelos, persistenc
 ## Estructura actual
 
 - `docs/`: requisitos, decisiones, arquitectura, plan de implementación, estado y evidencias de validación.
-- `src/`: estructura aprobada, router/layout compartido, páginas placeholder, entrada React y CSS móvil simple.
+- `src/`: estructura aprobada, router/layout compartido, vista de caminata activa y otras páginas base, entrada React y CSS móvil simple.
 - `src/types/`: modelos y estados sin implementación runtime, independientes de React y persistencia.
 - `src/data/db/`: factory Dexie y esquema v1, sin apertura automática ni conexión desde React.
 - `src/data/repositories/`: acceso a caminatas, puntos, sesión activa y ajustes mediante APIs independientes de React.
-- `src/services/geolocation/`: observación de posiciones y errores, con inicio/detención y sin integración UI.
+- `src/services/geolocation/`: observación de posiciones y errores, con inicio/detención; T19 lo consume a través del runtime.
 - `src/services/visibility/`: lectura de visibilidad, suscripción a cambios y cleanup independiente.
 - `src/services/wakeLock/`: soporte, solicitud/liberación de bloqueo de pantalla, estado y notificaciones de release.
 - `src/domain/metrics/`: distancia, tiempo total/activo, velocidad/ritmo promedio y conversiones mediante funciones puras.
@@ -36,6 +36,9 @@ Estado del repositorio tras T18: base técnica, navegación, modelos, persistenc
 - `src/features/tracking/persistenceCoordinator.ts`: buffer, triggers y coordinación de escrituras.
 - `src/features/tracking/persistentTrackingController.ts`: composición de T17 con persistencia, sin UI.
 - `src/data/repositories/trackingPersistenceStore.ts`: transacción de Walk, puntos y sesión mediante repositories.
+- `src/features/tracking/activeWalkRuntime.ts`: composición T16–T18 y ciclo de vida de la sesión en memoria.
+- `src/features/tracking/useActiveWalk.ts`: polling de snapshot y cleanup de UI.
+- `src/features/tracking/ActiveWalkPage.tsx`: estado, controles, métricas y errores en /walk.
 - `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones, calidad GPS, elevación y estado de sesión.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
@@ -55,7 +58,9 @@ src/
 │   │   ├── session.ts
 │   │   ├── trackingController.ts
 │   │   ├── persistenceCoordinator.ts
-│   │   └── persistentTrackingController.ts
+│   │   ├── persistentTrackingController.ts
+│   │   ├── activeWalkRuntime.ts
+│   │   └── useActiveWalk.ts
 │   ├── history/
 │   │   ├── HistoryPage.tsx
 │   │   └── WalkDetailPage.tsx
@@ -101,7 +106,7 @@ src/
 └── index.css
 ```
 
-Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. UI activa, recuperación interactiva, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
+Las 7 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Mapa/perfil activo, recuperación interactiva, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -118,7 +123,7 @@ Esquema versión 1:
 
 startedAt permite consultas por fecha y walkId recupera puntos de una caminata. Las claves externas de sesión/ajustes evitan añadir campos a los modelos. Los registros se almacenan completos. Dexie usa versión lógica 1 y versión nativa IndexedDB 10 según su convención; no hay migraciones futuras todavía.
 
-Las seis pruebas de base validan apertura/esquema, lectura/escritura de las cuatro tablas, consulta por walkId, sustitución con claves fijas, reapertura y limpieza sin residuos. La capa de repositories ofrece operaciones básicas probadas, sin integración con la UI ni recuperación interactiva; T18 incorpora guardado incremental a través de estos repositories.
+Las seis pruebas de base validan apertura/esquema, lectura/escritura de las cuatro tablas, consulta por walkId, sustitución con claves fijas, reapertura y limpieza sin residuos. La capa de repositories ofrece operaciones básicas probadas, sin recuperación interactiva; T18 incorpora guardado incremental y T19 lo utiliza a través del runtime, sin acceso directo desde React.
 
 Repositories disponibles:
 
@@ -137,7 +142,7 @@ createGeolocationService encapsula navigator.geolocation.watchPosition y clearWa
 
 RawPosition conserva latitude, longitude, altitude, accuracy, speed y timestamp, incluidos nulls en altitud/velocidad y valores cero. No asigna walkId, identidad, calidad definitiva ni estimaciones. Los errores se normalizan como permission-denied, position-unavailable y timeout; también contempla unknown y unsupported, sin mensajes de UI.
 
-Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. T17 integra el servicio con sesión y métricas en memoria; T18 conecta persistencia mediante la composición opcional; todavía no existe integración con UI ni con Wake Lock. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
+Opciones centralizadas y configurables: enableHighAccuracy true, maximumAge 0 ms y timeout omitido para conservar el valor nativo. Son valores iniciales ajustables, sin fijar umbrales de calidad o anomalías. T17 integra el servicio con sesión y métricas en memoria; T18 conecta persistencia mediante la composición opcional; T19 conecta la UI mediante runtime; Wake Lock sigue sin integración funcional. Permisos, precisión y consumo en iPhone siguen pendientes de validación real.
 
 ## Servicio de Page Visibility disponible
 
@@ -197,7 +202,7 @@ Altitudes finitas de puntos valid/suspicious participan. low-quality, anomalous 
 
 El perfil distancia-altitud reutiliza distancia T12 e incluye pointId, walkId, timestamp, distanceMeters, altitudeMeters, source, estimated y smoothed. Chart.js aún no está integrado al perfil. Los parámetros están centralizados y requieren calibración real; el detector puede confundir un pico real aislado.
 
-T17 integra estos módulos en memoria y T18 persiste incrementalmente sus snapshots; la UI activa sigue pendiente.
+T17 integra estos módulos en memoria y T18 persiste incrementalmente sus snapshots; T19 muestra métricas y controles en /walk.
 
 ## Estado de sesión implementado
 
@@ -217,7 +222,7 @@ Durante pausa conserva la observación GPS y los puntos raw, pero excluye esos p
 
 Finish libera el watcher; cleanup es idempotente e intenta liberar recursos incluso cuando la transición de dominio devuelve regressive-time o invalid-timestamp. El error permanece observable y el estado temporal previo se conserva, con watcher inactivo después de una liberación exitosa. QA-T17-001 quedó RESOLVED tras segunda validación PASS; una falla nativa de detención sigue devolviendo geolocation-stop-failed explícitamente.
 
-El controlador no persiste, no usa React ni modifica UI. T18 agrega persistencia por bloques mediante composición separada. No hay recuperación interactiva, Active Walk UI funcional, Leaflet/Chart.js en tracking activo ni integración funcional con Page Visibility/Wake Lock. Consultar el snapshot no avanza el reloj; se utiliza refresh explícito.
+El controlador no persiste, no usa React ni modifica UI. T18 agrega persistencia por bloques mediante composición separada. T19 aporta la UI activa; no hay recuperación interactiva, Leaflet/Chart.js en tracking activo ni integración funcional con Page Visibility/Wake Lock. Consultar el snapshot no avanza el reloj; se utiliza refresh explícito.
 
 ## Persistencia por bloques implementada — T18
 
@@ -229,7 +234,17 @@ Una cola serial y una promesa de flush compartida evitan escrituras conflictivas
 
 Al finalizar, se detiene GPS, se espera el bloque en curso y se fuerza el restante. Walk recibe las métricas finales y activeSession se elimina únicamente con la transacción final exitosa. Ante fallo quedan buffer y recovery state; se puede repetir finish. Cancel conserva datos incompletos y no borra registros. Cada caminata requiere una composición/coordinador nuevos.
 
-ActiveSession extendida conserva pausas, interrupciones y metadatos de puntos persistidos para recuperación futura. Los resúmenes de estado pueden incluir métricas de puntos pendientes; T26 deberá reconciliar desde registros confirmados. La recuperación interactiva Continue/Save/Discard aún no existe. Tampoco están integrados Page Visibility T27, Wake Lock T28, UI activa T19, Leaflet ni Chart.js al flujo activo. QA-T18-001 quedó RESOLVED tras la segunda validación de Valerio; se preserva el fallo histórico en TEST-RESULTS.
+ActiveSession extendida conserva pausas, interrupciones y metadatos de puntos persistidos para recuperación futura. Los resúmenes de estado pueden incluir métricas de puntos pendientes; T26 deberá reconciliar desde registros confirmados. La recuperación interactiva Continue/Save/Discard aún no existe. Tampoco están integrados Page Visibility T27, Wake Lock T28, Leaflet ni Chart.js al flujo activo. T19 conecta los controles y métricas con el runtime persistente. QA-T18-001 quedó RESOLVED tras la segunda validación de Valerio; se preserva el fallo histórico en TEST-RESULTS.
+
+## Active Walk View implementada — T19
+
+En **/walk** el usuario puede iniciar, pausar, reanudar y finalizar una caminata, visualizar métricas y estado/calidad GPS, y recibir errores de tracking o persistencia. ActiveWalkPage usa useActiveWalk y activeWalkRuntime para consumir T16–T18; React no accede a Geolocation/Dexie/repositories ni recalcula métricas.
+
+Muestra tiempo activo/total, distancia en km, velocidad promedio en km/h, ritmo en min/km, elevación ganada/perdida en metros e indicadores de estimación. Unidades métricas fijas: Settings aún no integrado. Los estados son inicial, activa, pausada, incompleta, finalizando, finalización pendiente de guardado y finalizada. Los errores GPS/persistencia/dominio se presentan sin textos técnicos crudos.
+
+Finish requiere confirmación; cancelarla conserva tracking. La acción confirmada usa flush/transacción final T18; solo muestra éxito tras persistencia confirmada. Ante fallo permite reintentar y conserva recovery state. El snapshot se actualiza cada segundo; desmontar elimina el timer de UI y mantiene el runtime por pestaña, sin duplicar watchers al volver. No recupera la sesión tras recargar.
+
+QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. Sin mapa integrado (T20), perfil Chart.js (T21), recuperación interactiva (T26), Page Visibility (T27) ni Wake Lock (T28). Estas tareas siguen pendientes; la siguiente autorizable es T20.
 
 ## Modelos TypeScript definidos
 
@@ -285,11 +300,11 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 278 pruebas/comprobaciones en diecisiete archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación, estado de sesión y orquestador y persistencia por bloques (incluidas QA-T17-001 y QA-T18-001); para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 294 pruebas/comprobaciones en dieciocho archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación, estado de sesión y orquestador, persistencia por bloques y Active Walk View (incluidas QA-T17-001 y QA-T18-001); para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 
-- Las páginas contienen placeholders. La base local y los repositories están definidos y probados, sin integración con la UI. El servicio de geolocalización está probado con mocks, con flujo de caminata en memoria mediante T17 y persistencia opcional T18 y sin UI activa.
+- /walk es funcional; las demás páginas siguen siendo vistas base. La base local y los repositories están definidos y probados, sin acceso directo desde componentes; la UI activa los utiliza mediante T18 y su runtime. El servicio de geolocalización está probado con mocks, con flujo de caminata en memoria mediante T17 y persistencia T18 y UI activa T19.
 - Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
 - readonly no congela objetos en runtime; validaciones de dominio adicionales, filtrado definitivo de rutas, estimación de tracking y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.

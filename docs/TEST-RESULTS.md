@@ -423,3 +423,35 @@ Valerio confirmó independientemente A–F con repositories reales/IndexedDB sim
 Cierre formal autorizado por el usuario. README y CURRENT_STATE actualizados; documentos fuente intactos. Sin implementación T19/T26/T27/T28 ni dependencias nuevas.
 
 Validación final de cierre de T18: Node24.21.0 / npm11.19.0; npm test -- --run PASS (278 pruebas,17 archivos,5.86 s), incluyendo seis regresiones QA-T18-001 y T17; npm run build PASS (30 módulos,304 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se verificó T19 sin implementar: ActiveWalkPage permanece placeholder, T17 intacto; sin recuperación T26 ni integración Visibility/Wake Lock/Leaflet/Chart.js. El cierre incluye git status y git log -1 --oneline después del commit.
+
+
+## T19 — Active Walk View — 2026-10-07
+
+Verificación de Aurelio; pendiente de QA y cierre formal. Sin commit. T20 no ha comenzado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Controles / estados | PASS | Inicial sin watcher, Start/doble inicio, active/paused/finished/incomplete, Pause/Resume y disabled. |
+| Métricas / errores | PASS | Helpers T13; duraciones, km/kmh/minkm, elevación/estimated; permission denied, unavailable, timeout y error dominio legibles. |
+| Finish / persistencia | PASS | Confirmación cancelada/aceptada, éxito solo tras finalización T18, error sin falso éxito y retry; runtime evita finish simultáneo. |
+| Ciclo UI | PASS | Timer1s, cleanup, remontaje conserva runtime y no duplica start. |
+| Tests | PASS | 294 pruebas,18 archivos,6.79 s;16 casos T19 y278 previos, QA-T17-001/QA-T18-001 incluidos. |
+| Build | PASS | 50 módulos,342 ms; salida0. |
+| Lint / TypeScript / diff | PASS | npm run lint, tsc -b --force y git diff --check sin errores. |
+| Navegador | PASS | /walk en Chrome real headless/CDP con GPS simulado;390x844; Start/Pause/Resume, confirmación cancelada y finish guardado. Sin errores consola/JS ni overflow. |
+| Alcance | PASS | React no accede Geolocation/Dexie; T16–T18 intactos; sin T20–T28, Leaflet/Chart.js ni cambios a README/fuentes. |
+
+Pruebas: tests/activeWalkView.test.tsx con RTL/mocks y timers falsos. Validación de navegador automatizada con CDP; no equivale a GPS real ni pruebas iPhone. Vite/Chrome con perfil aislado y permisos de sandbox para puerto local. No dependencias nuevas; unidades métricas fijas y runtime en memoria por pestaña, recuperación interactiva pendiente.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Comandos adicionales de navegador: npm run dev -- --host127.0.0.1, Chrome headless y script CDP en /tmp; sin GPS real ni código de prueba en la app.
+
+
+## T19 — QA aprobada y cierre formal — 2026-10-07
+
+Valerio: PASS — READY TO CLOSE T19. Los40 criterios fueron aprobados; sin defectos confirmados ni bloqueos. 294 pruebas,18 archivos,6.71 s; build50 módulos/375 ms; lint, TypeScript y git diff --check PASS. Se conserva evidencia histórica de tareas anteriores.
+
+Validación independiente en Chrome real/CDP con GPS simulado a390x844: inicial sin watcher, controles, Start/Pause/Resume, watcher único, pausa sin distancia artificial, confirmación cancelada y finish persistido. Desmontaje/remontaje eliminó/recreó timer sin otro watcher. Timeout/unavailable/permission denied legibles, sin mensajes crudos/crash ni overflow/errores de consola. Timeout inicial del harness fue sustituido por la primera posición simulada; tras esperar esa posición se verificaron los tres errores correctamente, sin defecto de producto.
+
+Cierre formal autorizado; CURRENT_STATE y README actualizados. Sin cambios a requisitos/decisiones/arquitectura/plan ni implementación de T20–T28. GPS real/iPhone y rendimiento de caminatas largas permanecen pendientes.
+
+Validación final de cierre de T19: Node24.21.0/npm11.19.0; npm test -- --run PASS (294 pruebas,18 archivos,6.86 s); npm run build PASS (50 módulos,339 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T20 sin iniciar: sin imports Leaflet/Chart.js en UI/runtime; T16–T18 y documentos fuente intactos. Se verifican git status y git log -1 --oneline después del commit.

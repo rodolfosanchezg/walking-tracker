@@ -1,12 +1,53 @@
 # Estado actual — Walking Tracker
 
-Fecha: 2026-10-06 (America/Bogota).
+Fecha: 2026-10-07 (America/Bogota).
 
 ## Tarea ejecutada
 
-T18 — Persistencia por bloques.
+T19 — Active Walk View.
 
-Estado: T18 CLOSED; cierre formal autorizado tras revalidación de Valerio PASS — READY TO CLOSE T18. QA-T18-001 RESOLVED. T19 no ha comenzado. T26/T27/T28 tampoco están implementadas.
+Estado: T19 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio PASS — READY TO CLOSE T19. T20 no ha comenzado. T21–T28 no se implementan en esta entrega.
+
+## Vista activa implementada en T19
+
+/walk (ruta existente, sin cambiar router) usa ActiveWalkPage con estado, métricas, GPS/errores y controles. src/features/tracking/activeWalkRuntime.ts compone el controlador persistente T18 con su coordinador y adapter de repositories; la base se crea solo al iniciar, nunca al importar/renderizar, y se cierra tras finish persistido exitoso. No hay llamadas Geolocation ni acceso Dexie desde React. T16/T17/T18 permanecen intactos.
+
+src/features/tracking/useActiveWalk.ts obtiene snapshots mediante polling centralizado de 1000 ms. Invoca refresh T17 para tiempos y tick T18 para trigger temporal; las posiciones entran por T09/T17/T18 existentes. No calcula coordenadas, clasificaciones ni métricas en componentes. React solo usa conversiones T13 (km, km/h, min/km), presentación de duración y redondeo. Unidades métricas fijas por ahora; no lee Settings ni agrega selector/configuración T25.
+
+Estados UI: Sin caminata, Activa, Pausada, Incompleta, Finalizando, Finalización pendiente de guardado y Finalizada. Inicialmente no hay watcher ni métricas activas. Iniciar crea una identidad crypto.randomUUID y usa naming mínimo del dominio. Doble inicio queda deshabilitado; Pause/Resume/Finish solo están disponibles en estados válidos. La pausa conserva métricas y explica que no acumula ruta activa mientras tiempo total continúa, según T16/T17.
+
+Métricas: tiempo activo y total, distancia, velocidad promedio, ritmo promedio, elevación ganada/perdida (con marca de estimación). GPS muestra estado, última clasificación y precisión. Permission denied/unsupported son errores de disponibilidad; position unavailable/timeout muestran un aviso temporal esperando nuevas posiciones. Errores persistentes ofrecen reintento sin mostrar textos técnicos crudos; errores de dominio (como reloj regresivo) son explícitos y legibles.
+
+Finish usa confirmación inline con group/label y botones Seguir caminando/Confirmar finalización. Runtime bloquea acciones mientras espera finish T18 y evita llamadas simultáneas. Solo muestra éxito cuando persistence.finalized es true; fallo conserva estado pendiente, muestra error y Reintentar finalización. Usa transacción/flush final T18; React no llama repositories manualmente. El resumen básico conserva métricas, sin implementar detalle T24.
+
+Runtime singleton por pestaña conserva sesión entre desmontaje/remontaje y crea nuevo controlador/coordinador solo para una siguiente caminata ya finalizada. El hook elimina únicamente su timer; no cancela ni destruye una caminata al navegar/re-renderizar. No hay suscripciones adicionales a navegador. Guardas mounted evitan actualizaciones de estado tras desmontaje. Sin recuperación tras recarga: esa interacción es T26. Navegar fuera de /walk conserva GPS y su persistencia por cantidad/posiciones; no queda polling UI allí, y no se garantiza ejecución en background.
+
+Accesibilidad/estilos: h2/section, status textual, alert legible, dl de métricas, controles con labels/disabled/foco visible y altura mínima 44 px. Layout sencillo en dos columnas y controles que ajustan líneas. No mapa, gráfico, velocidad/ritmo actuales, Home/History/Settings adicionales, recuperación, Visibility ni Wake Lock.
+
+## Validación T19 — 2026-10-07
+
+16 casos nuevos en tests/activeWalkView.test.tsx usan RTL, runtime/controlador mockeado y timers falsos: inicial/acciones inválidas, start/doble inicio, métricas, pause/resume, confirmación cancelada/confirmada, finalización fallida/pending/retry, tres errores GPS, acciones ocupadas, timer cleanup/remontaje, llamada a finish persistente, error de dominio, concurrencia de finish e incomplete. Nunca utilizan GPS real.
+
+| Comprobación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 294 pruebas,18 archivos,6.79 s; 278 previas más16 T19, incluidas regresiones QA-T17-001/QA-T18-001. |
+| Build | PASS | 50 módulos,342 ms; salida0. |
+| Lint / TypeScript | PASS | npm run lint y tsc -b --force sin errores. |
+| Whitespace | PASS | git diff --check sin errores. |
+| Navegador real | PASS | Chrome headless controlado por CDP, viewport390x844, GPS simulado por Emulation; /walk, inicial, Start/Pause/Resume, cancelación de confirmación y finish guardado. Cero errores JS/consola y sin overflow horizontal. |
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0 / npm11.19.0. Se levantó Vite y Chrome con perfil /tmp aislado; script CDP externo al repositorio. Sandbox bloqueó puerto/conexión local (EPERM), validación completada con permisos concedidos. Verificación de navegador automatizada sobre Chrome real, sin afirmar interacción humana ni prueba GPS real/iPhone.
+
+Sin dependencias nuevas ni bloqueos. El plan conceptual menciona mapa/perfil para T19; la instrucción explícita autorizada los excluye hasta T20/T21, respetada sin modificar fuentes. Limitaciones: Settings aún no integrado (unidades métricas); sin mapas/gráficos ni recuperación interactiva; pruebas reales iPhone/rendimiento de caminatas largas pendientes. README actualizado en el cierre formal con T00–T19, UI activa, testing, limitaciones y T20 pendiente. T20 no ha comenzado.
+
+La revisión independiente de Valerio aprobó T19: PASS — READY TO CLOSE T19. 294 pruebas (18 archivos,6.71 s), build (375 ms), lint, TypeScript y git diff --check PASS. Chrome con GPS simulado confirmó inicial sin watcher, watcher único, Start/Pause/Resume, pausa sin distancia artificial, confirmación cancelada y finish guardado. Navegar fuera/volver eliminó/recreó timer sin duplicar watcher. Timeout/unavailable/permission denied visibles, sin mensajes crudos ni crash;390x844 sin overflow/errores de consola. Primera simulación de timeout fue sustituida por la posición inicial del mock; repetida tras esa posición, pasó. Sin defectos confirmados ni bloqueos. GPS real/iPhone y rendimiento de caminatas largas pendientes.
+
+
+Validación final de cierre de T19: Node24.21.0/npm11.19.0; npm test -- --run PASS (294 pruebas,18 archivos,6.86 s); npm run build PASS (50 módulos,339 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T20 sin iniciar: sin imports Leaflet/Chart.js en UI/runtime; T16–T18 y documentos fuente intactos. Se verifican git status y git log -1 --oneline después del commit.
+
+## Historial de T18
+
+T18 aprobada y cerrada en d676cf1 (feat: complete T18 block persistence), con QA-T18-001 RESOLVED tras revalidación PASS. El FAIL histórico queda preservado a continuación y en TEST-RESULTS.
 
 ## Persistencia incremental implementada en T18
 
