@@ -4,17 +4,17 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T20 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. /walk tiene una UI funcional; Inicio, Historial, Detalle y Configuración siguen siendo vistas base.
+T00–T21 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. /walk tiene una UI funcional; Inicio, Historial, Detalle y Configuración siguen siendo vistas base.
 
-La siguiente tarea pendiente es **T21 — Integración del perfil de elevación con Chart.js**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
+La siguiente tarea pendiente es **T22 — Home View**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
 
-Estado del repositorio tras T20: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19 y Leaflet T20; 308 pruebas/comprobaciones en 19 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
+Estado del repositorio tras T21: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19 y Leaflet T20 y Chart.js T21; 322 pruebas/comprobaciones en 20 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
 
 ## Stack y dependencias instaladas
 
 - Entorno: Node.js `24.21.0` mediante NVM y npm `11.19.0`.
 - Base operativa: React / React DOM `19.3.0`, TypeScript `6.0.3` y Vite `8.3.2` con plugin React.
-- Dependencias runtime: React Router DOM `7.18.4` integrado para navegación y Dexie `4.4.6` configurado para IndexedDB; Leaflet `1.9.4` integrado en /walk; Chart.js `4.5.1` instalado, sin integración funcional todavía.
+- Dependencias runtime: React Router DOM `7.18.4` integrado para navegación y Dexie `4.4.6` configurado para IndexedDB; Leaflet `1.9.4` integrado en /walk; Chart.js `4.5.1` integrado como perfil de elevación activo.
 - Testing disponible: Vitest `5.0.3`, React Testing Library `16.3.3`, jest-dom `7.0.1`, jsdom `30.1.2` y fake-indexeddb `6.2.5` (solo dev). Las pruebas de base usan IndexedDB en memoria aislada, sin datos reales del navegador.
 - Tooling: Oxlint y tipos de Node, React y Leaflet. Versiones exactas y transitivas registradas en `package-lock.json`.
 
@@ -40,6 +40,8 @@ Estado del repositorio tras T20: base técnica, navegación, modelos, persistenc
 - `src/features/tracking/useActiveWalk.ts`: polling de snapshot y cleanup de UI.
 - `src/features/tracking/ActiveWalkPage.tsx`: estado, controles, métricas y errores en /walk.
 - `src/features/maps/`: ActiveWalkMap, adaptación de snapshot y configuración raster.
+- `src/features/tracking/ElevationProfile.tsx`: gráfico responsive con Chart.js, actualización y destroy.
+- `src/features/tracking/elevationProfileData.ts`: snapshot/T15 → datasets distancia-altitud segmentados.
 - `tests/`: setup jest-dom/cleanup RTL, bootstrap, navegación, comprobaciones de tipos y pruebas de base local, repositories, geolocalización, visibilidad y Wake Lock con mocks, y cálculos de distancia, tiempo, promedios, conversiones, calidad GPS, elevación y estado de sesión.
 - `vite.config.ts` y `vitest.config.ts`: configuración de desarrollo/build y testing.
 - `tsconfig*.json`: compilación de aplicación, pruebas y configuraciones.
@@ -61,7 +63,9 @@ src/
 │   │   ├── persistenceCoordinator.ts
 │   │   ├── persistentTrackingController.ts
 │   │   ├── activeWalkRuntime.ts
-│   │   └── useActiveWalk.ts
+│   │   ├── useActiveWalk.ts
+│   │   ├── ElevationProfile.tsx
+│   │   └── elevationProfileData.ts
 │   ├── history/
 │   │   ├── HistoryPage.tsx
 │   │   └── WalkDetailPage.tsx
@@ -110,7 +114,7 @@ src/
 └── index.css
 ```
 
-Las 6 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Perfil activo, recuperación interactiva, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
+Las 6 carpetas finales todavía vacías contienen `.gitkeep`; la capa de datos, los tres servicios del navegador y el módulo de distancia ya contienen implementación. Recuperación interactiva, estimación de tracking, integraciones y migraciones futuras siguen pendientes.
 
 ## Persistencia local configurada
 
@@ -204,7 +208,7 @@ El suavizado usa una banda muerta de 3 m respecto al último valor aceptado. Pic
 
 Altitudes finitas de puntos valid/suspicious participan. low-quality, anomalous y estimated de entrada quedan excluidos según la política documentada. Ganancia/pérdida suman deltas positivos/negativos de la serie procesada, sin conectar a través de huecos. Los resultados son subtotales de tramos disponibles y pueden contener estimaciones identificadas.
 
-El perfil distancia-altitud reutiliza distancia T12 e incluye pointId, walkId, timestamp, distanceMeters, altitudeMeters, source, estimated y smoothed. Chart.js aún no está integrado al perfil. Los parámetros están centralizados y requieren calibración real; el detector puede confundir un pico real aislado.
+El perfil distancia-altitud reutiliza distancia T12 e incluye pointId, walkId, timestamp, distanceMeters, altitudeMeters, source, estimated y smoothed. T21 utiliza este perfil procesado en Chart.js. Los parámetros están centralizados y requieren calibración real; el detector puede confundir un pico real aislado.
 
 T17 integra estos módulos en memoria y T18 persiste incrementalmente sus snapshots; T19 muestra métricas y controles en /walk.
 
@@ -226,7 +230,7 @@ Durante pausa conserva la observación GPS y los puntos raw, pero excluye esos p
 
 Finish libera el watcher; cleanup es idempotente e intenta liberar recursos incluso cuando la transición de dominio devuelve regressive-time o invalid-timestamp. El error permanece observable y el estado temporal previo se conserva, con watcher inactivo después de una liberación exitosa. QA-T17-001 quedó RESOLVED tras segunda validación PASS; una falla nativa de detención sigue devolviendo geolocation-stop-failed explícitamente.
 
-El controlador no persiste, no usa React ni modifica UI. T18 agrega persistencia por bloques mediante composición separada. T19 aporta la UI activa; no hay recuperación interactiva ni Chart.js en tracking activo ni integración funcional con Page Visibility/Wake Lock. Consultar el snapshot no avanza el reloj; se utiliza refresh explícito.
+El controlador no persiste, no usa React ni modifica UI. T18 agrega persistencia por bloques mediante composición separada. T19 aporta la UI activa; T21 aporta el perfil Chart.js; no hay recuperación interactiva ni integración funcional con Page Visibility/Wake Lock. Consultar el snapshot no avanza el reloj; se utiliza refresh explícito.
 
 ## Persistencia por bloques implementada — T18
 
@@ -238,7 +242,7 @@ Una cola serial y una promesa de flush compartida evitan escrituras conflictivas
 
 Al finalizar, se detiene GPS, se espera el bloque en curso y se fuerza el restante. Walk recibe las métricas finales y activeSession se elimina únicamente con la transacción final exitosa. Ante fallo quedan buffer y recovery state; se puede repetir finish. Cancel conserva datos incompletos y no borra registros. Cada caminata requiere una composición/coordinador nuevos.
 
-ActiveSession extendida conserva pausas, interrupciones y metadatos de puntos persistidos para recuperación futura. Los resúmenes de estado pueden incluir métricas de puntos pendientes; T26 deberá reconciliar desde registros confirmados. La recuperación interactiva Continue/Save/Discard aún no existe. Tampoco están integrados Page Visibility T27, Wake Lock T28 ni Chart.js al flujo activo. T20 integra Leaflet usando snapshots. T19 conecta los controles y métricas con el runtime persistente. QA-T18-001 quedó RESOLVED tras la segunda validación de Valerio; se preserva el fallo histórico en TEST-RESULTS.
+ActiveSession extendida conserva pausas, interrupciones y metadatos de puntos persistidos para recuperación futura. Los resúmenes de estado pueden incluir métricas de puntos pendientes; T26 deberá reconciliar desde registros confirmados. La recuperación interactiva Continue/Save/Discard aún no existe. Tampoco están integrados Page Visibility T27 ni Wake Lock T28 al flujo activo. T21 muestra el perfil Chart.js. T20 integra Leaflet usando snapshots. T19 conecta los controles y métricas con el runtime persistente. QA-T18-001 quedó RESOLVED tras la segunda validación de Valerio; se preserva el fallo histórico en TEST-RESULTS.
 
 ## Active Walk View implementada — T19
 
@@ -248,7 +252,7 @@ Muestra tiempo activo/total, distancia en km, velocidad promedio en km/h, ritmo 
 
 Finish requiere confirmación; cancelarla conserva tracking. La acción confirmada usa flush/transacción final T18; solo muestra éxito tras persistencia confirmada. Ante fallo permite reintentar y conserva recovery state. El snapshot se actualiza cada segundo; desmontar elimina el timer de UI y mantiene el runtime por pestaña, sin duplicar watchers al volver. No recupera la sesión tras recargar.
 
-QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. T20 integra el mapa; permanecen pendientes perfil Chart.js (T21), recuperación interactiva (T26), Page Visibility (T27) ni Wake Lock (T28). Estas tareas siguen pendientes; la siguiente autorizable es T21.
+QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. T20 integra el mapa; T21 integra el perfil Chart.js. Permanecen pendientes recuperación interactiva (T26), Page Visibility (T27) y Wake Lock (T28); la siguiente tarea es T22.
 
 ## Mapa Leaflet integrado — T20
 
@@ -260,7 +264,17 @@ Tiles raster OpenStreetMap con atribución/configuración centralizada. Si no ca
 
 El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, posición, ruta y estado GPS, y mover/ampliar el mapa. QA aprobó T20 y regresión T19 con 308 pruebas; Chrome390x844 con GPS/tiles simulados confirmó pausa/resume, anomalía excluida, pan/zoom y finalización. Tiles reales de Internet, GPS real/iPhone y rendimiento de caminatas largas siguen pendientes de validación.
 
-Siguientes tareas pendientes: T21 perfil Chart.js; T22 Home funcional; T23 History; T24 Walk Detail; T25 Settings; T26 Recovery; T27 Page Visibility; T28 Wake Lock. No se han iniciado en esta entrega.
+Siguientes tareas pendientes: T22 Home funcional; T23 History; T24 Walk Detail; T25 Settings; T26 Recovery; T27 Page Visibility; T28 Wake Lock. No se han iniciado en esta entrega.
+
+## Perfil de elevación integrado — T21
+
+/walk muestra el perfil de elevación con Chart.js a partir del snapshot T17 y buildElevationProfile T15. Eje X: distancia acumulada en kilómetros; eje Y: altitud procesada en metros. Cada segmento activo es un dataset separado, sin unir pausas ni huecos de altitud. Estimaciones T15 identificadas con triángulos, texto y tooltip; anomalías no se muestran como altitud válida.
+
+Con menos de dos altitudes procesadas disponibles muestra estado vacío. Al llegar puntos actualiza datasets sin recrear la instancia, con animación desactivada. Pause conserva el perfil, Resume continúa con otro segmento y Finish mantiene perfil, mapa y métricas. Destroy al desmontar retira la instancia/listeners; T19/T20 siguen operativos.
+
+El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, mapa/ruta/posición actual y perfil distancia-altitud, conservando mapa/perfil después de Finish. Unidades métricas fijas; Settings aún no integrado. La recuperación interactiva T26, Page Visibility T27 y Wake Lock T28 siguen pendientes, junto a Home T22, History T23, Walk Detail T24 y Settings T25.
+
+QA aprobó T21 con 322 pruebas y Chrome390x844 con GPS/tiles simulados: actualización estable, pico vertical3000 excluido por T15, pausa/resume, interpolación marcada, dos desmontajes/remontajes y perfil final. GPS real/iPhone y rendimiento de caminatas largas todavía pendientes.
 
 ## Modelos TypeScript definidos
 
@@ -316,7 +330,7 @@ npm run lint
 ./node_modules/.bin/tsc -b --force
 ```
 
-`npm test` ejecuta 308 pruebas/comprobaciones en diecinueve archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación, estado de sesión y orquestador, persistencia por bloques Active Walk View y Leaflet (incluidas QA-T17-001 y QA-T18-001); para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
+`npm test` ejecuta 322 pruebas/comprobaciones en veinte archivos: bootstrap, navegación, modelos, base local, repositories, geolocalización, visibilidad, Wake Lock, distancia, tiempo/promedios, conversiones, calidad GPS, elevación, estado de sesión y orquestador, persistencia por bloques Active Walk View, Leaflet y perfil Chart.js (incluidas QA-T17-001 y QA-T18-001); para modo watch puede utilizarse `npm test -- --watch`. Las cuatro comprobaciones expectTypeOf se validan mediante compilación TypeScript, no por la ejecución Vitest aislada. `npm run build` comprueba TypeScript y genera `dist/`. `npm run preview` sirve el build localmente.
 
 ## Limitaciones vigentes
 

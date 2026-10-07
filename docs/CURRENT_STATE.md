@@ -4,9 +4,48 @@ Fecha: 2026-10-07 (America/Bogota).
 
 ## Tarea ejecutada
 
-T20 — Integración Leaflet.
+T21 — Integración del perfil de elevación con Chart.js.
 
-Estado: T20 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio PASS — READY TO CLOSE T20. T21 no ha comenzado; T22–T28 fuera del alcance.
+Estado: T21 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio PASS — READY TO CLOSE T21. T22 no ha comenzado; T23–T28 fuera del alcance.
+
+## Perfil integrado en T21
+
+src/features/tracking/ElevationProfile.tsx encapsula Chart.js4.5.1, sin wrappers/dependencias nuevas. ActiveWalkPage lo carga mediante lazy/Suspense debajo del mapa y antes de controles. Solo registra LineController, LineElement, PointElement, LinearScale y Tooltip. Dimensiones explícitas responsive260px; ejes lineales X distancia acumulada(km)/Y altitud procesada(m). Títulos, canvas con aria-label/fallback, estado textual y explicación de huecos/estimaciones complementan el color.
+
+src/features/tracking/elevationProfileData.ts adapta snapshot.rawPoints, assessment y segment T17. Excluye segment=null (pausa/posiciones antiguas), agrupa por segmento activo y construye los TrackPoints clasificados de la misma forma que T17. Invoca buildElevationProfile T15 para cada segmento, sin reimplementar smoothing/interpolación/calidad/ganancia/pérdida. Distancia horizontal interna T15 se concatena mediante offset de tramos previos; usa metersToKilometers T13 para X. Y procede directamente de altitudeMeters procesado. No se une el desplazamiento de pausa.
+
+Dataset por segmento: puntos { x:km, y:altitudeMeters|null, estimated:boolean }. spanGaps=false conserva huecos sin líneas falsas; datasets separados evitan conectar alturas antes/después de pausa. T15 excluye anomalous/low-quality/estimated de entrada y entrega nulls/estimaciones identificadas. Los valores interpolados se muestran con triángulos, texto y tooltip estimated, sin alterar raw GPS. Perfil parcial queda indicado por texto. Unidades métricas según estrategia T19; Settings no integrado.
+
+Ciclo Chart: crea instancia al disponer de al menos dos altitudes procesadas, actualiza datasets y update('none')/resize sin recrear; animation=false y parsing=false. useMemo evita reprocesar cuando la referencia de capturas no cambia; el polling T19 puede producir nuevos arrays y actualizar una vez por segundo, sin timers nuevos. destroy al desmontar. Si empieza otra caminata vacía, oculta canvas y limpia datasets conservando instancia reutilizable. Con 0/1 altitudes disponibles o todas null, muestra estado vacío claro. Nulls parciales no se extrapolan visualmente.
+
+Pause conserva perfil; capturas de pausa no añaden datos activos. Resume agrega dataset con offset de distancia ya acumulada, sin puente por pausa ni interpolación entre segmentos. Finish conserva gráfico/datos finales. Ninguna llamada a Geolocation, Dexie/repositories ni fórmulas GPS dentro del componente. T15 y T16–T20 runtime/mapa permanecen intactos.
+
+## Pruebas y verificación T21 — 2026-10-07
+
+14 casos nuevos en tests/elevationProfile.test.tsx: 0/1/null, integración /walk, datos T15/km/m/no mutación, actualización y reutilización, cleanup, anomalous/null/spanGaps, interpolaciones/triángulos, pausa/resume con offsets, perfil parcial, finish y nueva caminata vacía. Chart.js mockeado, sin canvas real en unit tests. Pruebas previas T19/T20 y regresiones QA-T17-001/QA-T18-001 siguen pasando.
+
+| Validación | Resultado | Evidencia |
+|---|---|---|
+| Tests | PASS | 322 pruebas,20 archivos,8.35 s;308 previas y14 nuevas. |
+| Build | PASS | 60 módulos,447 ms; chunk perfil153.45kB, mapa152.01kB, inicial382.53kB. |
+| Lint / TypeScript | PASS | npm run lint/tsc -b --force sin errores ni warnings de hooks finales. |
+| Whitespace | PASS | git diff --check sin errores. |
+| Navegador | PASS | Chrome real headless/CDP390x844, GPS/tiles simulados. A vacío; B dos puntos con X creciente/Y100→110; C pausa sin cambios y resume separado con altitud null interpolada510/estimated/triángulo; D finish conserva gráfico/mapa/métricas. ChartID0 estable, watcher único/liberado al finalizar, sin overflow ni errores JS/consola. |
+
+Hallazgos corregidos: tabla test.each pasaba objetos individuales en lugar de arrays (2 fallos de fixtures), corregida; lint inicial detectó dependencias de useMemo incompletas, simplificado para depender explícitamente de rawPoints. T15 no requirió cambios. Referencia técnica consultada: https://www.chartjs.org/docs/latest/developers/updates.html (update none) y https://www.chartjs.org/docs/latest/charts/line.html (spanGaps/datasets).
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Vite/Chrome/CDP con perfil /tmp aislado y permisos de puerto local para validación automatizada sobre navegador real. No GPS real, tiles online ni interacción humana afirmada.
+
+Sin dependencias nuevas ni bloqueos. Limitaciones: unidades métricas fijas, perfil disponible desde dos altitudes, recálculo lineal por segmento mediante T15 y actualización1Hz; rendimiento de caminatas largas e iPhone pendientes. No gráfico en detalle T24 ni Home/History/Settings/Recovery/Visibility/Wake Lock. README actualizado en el cierre formal para T00–T21, perfil, testing, limitaciones y T22 pendiente. Fuentes intactas. T22 no ha comenzado.
+
+QA independiente de Valerio: PASS — READY TO CLOSE T21. Los48 criterios, lifecycle y regresión T19/T20 aprobados; sin defectos confirmados ni bloqueos. 322 pruebas (20 archivos,8.11 s), build (433 ms), lint/TypeScript/diff PASS. Chrome/CDP390x844 con GPS/tiles simulados: A vacío; B perfil km/m actualizado; C pausa/resume segmentado e interpolación510 marcada; D pico raw3000 excluido por T15; E perfil/mapa/métricas finales visibles. Dos unmount/remount liberaron ctx/listeners y registro de charts0→1, watcher único. El harness inicialmente intentó serializar Chart circular; corregido para inspeccionar contadores/estados simples, sin defecto de producto. Sin errores ni overflow. GPS real/iPhone y rendimiento largo NOT TESTED. QA aprobó T21; T22 no ha comenzado.
+
+
+Validación final de cierre de T21: Node24.21.0/npm11.19.0; npm test -- --run PASS (322 pruebas,20 archivos,8.18 s); Chart T21, lifecycle/destroy, pausa/resume y regresión T19/T20 aprobados. npm run build PASS (60 módulos,356 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T22 sin iniciar: Home permanece vista base; fuentes/T15/runtime/mapa intactos y sin T23–T28. Se verifican git status y git log -1 --oneline después del commit.
+
+## Historial de T20
+
+T20 aprobada/cerrada en 0662911 (feat: complete T20 leaflet integration), QA PASS — READY TO CLOSE T20 sin defectos confirmados. Evidencia histórica preservada a continuación.
 
 ## Mapa activo implementado en T20
 

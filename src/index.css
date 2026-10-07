@@ -85,3 +85,6 @@ button:focus-visible { outline: 3px solid #164e80; outline-offset: 3px; }
 
 .active-walk-map { height: 320px; width: 100%; margin-bottom: 0.75rem; border: 1px solid #c4ced7; z-index: 0; }
 @media (min-width: 600px) { .active-walk-map { height: 400px; } }
+
+.elevation-chart { position: relative; width: 100%; height: 260px; margin: 0.75rem 0; }
+.elevation-chart[hidden] { display: none; }

@@ -489,3 +489,35 @@ Cobertura: inicialización única/cleanup, marker reutilizado, polyline/orden, e
 Cierre formal autorizado. README/CURRENT_STATE actualizados; sin modificar documentos fuente ni iniciar T21–T28. No dependencias nuevas ni funcionalidades adicionales.
 
 Validación final de cierre de T20: Node24.21.0/npm11.19.0; npm test -- --run PASS (308 pruebas,19 archivos,7.87 s); pruebas Leaflet, regresión T19, pausa/resume sin puente y cleanup aprobados. npm run build PASS (55 módulos,369 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó ausencia de Chart.js funcional/T21 y cambios a documentos fuente; T16–T19 runtime y capas inferiores intactos salvo integración visual/prueba de controles autorizadas. Se verifican git status y git log -1 --oneline después del commit.
+
+
+## T21 — Perfil de elevación con Chart.js — 2026-10-07
+
+Verificación de Aurelio; pendiente de QA/cierre, sin commit. T22 no ha comenzado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Datos T15/unidades | PASS | Adapter segmentado; X distancia acumulada km, Y altitudeMeters procesada; no altera raw ni implementa smoothing/calidad. |
+| Estados/calidad | PASS | 0/1/null/partial, anomalous excluido, interpolaciones con triángulos/texto/tooltip. |
+| Ciclo Chart | PASS | Registro mínimo, update none, instancia estable, destroy al desmontar, nueva sesión oculta datos anteriores. |
+| Pausa/resume/final | PASS | Pausa sin puntos nuevos, resume con dataset separado y offset acumulado; finish conserva perfil. |
+| Tests | PASS | 322 pruebas,20 archivos,8.35 s;14 T21 y308 anteriores incluidas T19/T20/QA-T17-001/QA-T18-001. |
+| Build | PASS | 60 módulos,447 ms; chunks separados, sin aviso de tamaño. |
+| Lint / TypeScript / diff | PASS | npm run lint, tsc -b --force y git diff --check, salida0. |
+| Navegador | PASS | Chrome/CDP390x844, GPS/tiles simulados A–D, ChartID0 estable; pausa, interpolación510 estimated/triangle, final gráfico/mapa/métricas visibles, sin errores ni overflow. |
+| Alcance | PASS | T15/runtime/mapa intactos; sin T22–T28, dependencias nuevas ni cambios a README/fuentes. |
+
+Primeros tests317PASS/2FAIL por fixtures test.each mal estructurados, corregidos. Lint inicial señaló useMemo con dependencias incompletas; simplificado, final sin warnings. Sin cambios al dominio T15. Pruebas Chart mockeado, sin canvas/navegador real en suite; prueba separada en Chrome real con simulación GPS/tiles. No equivale a validación real iPhone/rendimiento largo.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Node24.21.0/npm11.19.0. Adicionales: Vite dev, Chrome headless/CDP con perfil /tmp aislado y permisos de puerto local.
+
+
+## T21 — QA aprobada y cierre formal — 2026-10-07
+
+Valerio: PASS — READY TO CLOSE T21. Los48 criterios y regresión T19/T20 PASS, sin defectos confirmados ni bloqueos. 322 pruebas,20 archivos,8.11 s; build60 módulos/433 ms; lint/TypeScript/git diff --check PASS. Historial anterior preservado.
+
+Cobertura: estados0/1/múltiples/null, datasets T15 distancia-altitud km/m, actualización sin duplicar Chart, cleanup/destroy, política de anomalías, pausa/resume segmentados y Finish conservado. Chrome/CDP390x844 con GPS/tiles simulados A–E: instancia estable, X creciente, pico3000 excluido, interpolación510 marcada, perfil/mapa/métricas finales visibles. Dos desmontajes/remontajes verificaron ctx=null/listeners0/registro0→1, watcher1; pan/zoom Leaflet disponibles. Sin errores ni overflow. Serialización circular del harness corregida para leer valores simples, no fue defecto de producto.
+
+Cierre formal autorizado; README y CURRENT_STATE actualizados. No cambios a documentos fuente/T15 ni implementación de T22–T28. GPS real/iPhone/rendimiento largo NOT TESTED. Sin dependencias nuevas.
+
+Validación final de cierre de T21: Node24.21.0/npm11.19.0; npm test -- --run PASS (322 pruebas,20 archivos,8.18 s); Chart T21, lifecycle/destroy, pausa/resume y regresión T19/T20 aprobados. npm run build PASS (60 módulos,356 ms); npm run lint PASS; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T22 sin iniciar: Home permanece vista base; fuentes/T15/runtime/mapa intactos y sin T23–T28. Se verifican git status y git log -1 --oneline después del commit.
