@@ -1,7 +1,13 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import AppRouter from '../src/app/router'
+
+vi.mock('../src/data/repositories/historyStore', () => ({ historyStore: {
+  list: async () => [{ id: 'example', name: 'Caminata guardada', startedAt: 1000,
+    activeDurationMs: 1000, distanceMeters: { value: 100, estimated: false }, status: 'finished', isIncomplete: false }],
+  delete: vi.fn(),
+} }))
 
 test.each([
   ['/', 'Inicio'],
@@ -31,7 +37,7 @@ test('permite navegar entre vistas, detalle e historial sin recargar', async () 
     expect(screen.getByRole('link', { name: link })).toHaveAttribute('aria-current', 'page')
   }
 
-  fireEvent.click(screen.getByRole('link', { name: 'Ver detalle de ejemplo' }))
+  fireEvent.click(await screen.findByRole('link', { name: 'Caminata guardada' }))
   expect(await screen.findByText('Identificador: example')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('link', { name: 'Volver al historial' }))
   expect(await screen.findByRole('heading', { level: 2, name: 'Historial' })).toBeInTheDocument()

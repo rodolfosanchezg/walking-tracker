@@ -1,8 +1,44 @@
 # Estado actual — Walking Tracker
 
-Fecha: 2026-10-07 (America/Bogota).
+Fecha: 2026-10-08 (America/Bogota).
 
 ## Tarea ejecutada
+
+T23 — History View.
+
+Estado: T23 CLOSED; cierre formal autorizado tras aprobación de Valerio: PASS — READY TO CLOSE T23. T24 no ha comenzado; T25–T28 fuera del alcance.
+
+## Historial implementado en T23
+
+/history consume historyStore mediante una API inyectable list/delete. La capa de datos usa WalkRepository.list; React no accede directamente a Dexie/IndexedDB ni Geolocation, no reconstruye desde trackPoints ni calcula métricas. La conexión se crea por operación y se cierra en finally. HistoryPage usa estado local y un efecto de carga con protección ante desmontaje; carga al entrar, sin suscripción a cambios en vivo.
+
+Cada registro muestra nombre, fecha local de startedAt (o No disponible), distancia en km mediante metersToKilometers T13, duración activa HH:MM:SS y estado. Incomplete sigue visible como registro guardado, sin convertirlo en recuperación interactiva. Distancia estimada se identifica. Unidades métricas fijas según T19; Settings aún pendiente.
+
+historyFilters implementa búsqueda parcial case-insensitive con trim y rango opcional Desde/Hasta inclusivo por día local, consistente con la fecha mostrada. Nombre y fechas se combinan mediante AND. Rango invertido o fecha inválida muestra advertencia/sin resultados, sin crash. Orden por startedAt descendente, desempate determinístico por id; fechas ausentes/inválidas al final y excluidas cuando se filtra por fecha. Filtra/ordena copias, sin mutar Walks.
+
+Links React Router a Home y /walk/:walkId con id codificado. WalkDetail sigue placeholder T05, sin implementar T24. Loading/empty/sin resultados/error legibles; error de lectura con Reintentar y sin detalles técnicos. Inputs etiquetados, lista semántica y botones de confirmación con foco; CSS limitado a filtros/tarjetas, adaptable a móvil/desktop.
+
+Delete exige confirmación; cancelar no escribe. createHistoryStore coordina TrackPointRepository.deleteByWalkId y WalkRepository.delete en una transacción rw sobre walks/trackPoints/activeSession. El fallo revierte todo, conserva la lista y permite retry. No deja puntos huérfanos ni borra registros de otras caminatas. Protege el Walk vinculado a activeSession persistida (incluidas sesiones pendientes) para no interferir con T18 o recuperación futura; no elimina ni recupera esa sesión. Durante Delete se bloquean acciones duplicadas; tras éxito actualiza lista. Rename queda diferido explícitamente: IMPLEMENTATION-PLAN asigna nombre editable a T24; no se duplicó esa funcionalidad.
+
+## Verificación T23 — 2026-10-08
+
+25 pruebas nuevas: tests/historyView.test.tsx (20 casos RTL/MemoryRouter, stores mockeados) y tests/historyStore.test.ts (5 casos con fake-indexeddb aislada y borrado de base tras cada prueba). Cubren loading/empty/error/retry, resumen, orden, incomplete, búsqueda, from/to/rango/AND, navegación, confirmación/cancelación/Delete/error/duplicados, atomicidad/rollback/anti-orphan/protección de sesión/reapertura. tests/navigation.test.tsx adaptada para usar un Walk mockeado en lugar del enlace placeholder retirado; no pierde cobertura de detalle/ruta. Primer run: fallo en esa expectativa antigua, corregido; advertencia lint sobre setState síncrono en efecto eliminada moviendo el reinicio de carga a la acción Reintentar.
+
+Navegador real Chrome headless/CDP, perfil temporal aislado, IndexedDB real con fixtures sintéticas, sin datos del usuario. A vacío/Home PASS; B varias caminatas, orden, resumen/incomplete, búsqueda case-insensitive y AND con fecha PASS; C detalle placeholder /walk/qa-c PASS; D cancelar/confirmar Delete, recargar y verificar Walk ausente/puntos0 PASS. 390×844 y1280×800 sin overflow/errores consola; la base de fixtures se eliminó al finalizar. E Rename no aplica, diferido a T24. Sin GPS real/iPhone ni performance de historiales grandes validados.
+
+Sin dependencias nuevas. Limitaciones: listado se refresca al entrar/reintentar, no en vivo; filtros en memoria apropiados al MVP, no paginación; día local del navegador; Delete de una sesión persistida se rechaza; Rename/Recovery/Settings/Visibility/Wake Lock pendientes. README actualizado durante el cierre; los cuatro documentos fuente permanecen intactos. T24 no ha comenzado.
+
+Validación final T23: Node 24.21.0/npm 11.19.0. Tests PASS: 357 pruebas en 23 archivos, 9.57 s (332 anteriores +25 nuevas); regresiones T19–T22 incluidas. Build PASS: 63 módulos, 448 ms. Lint PASS sin advertencias; TypeScript tsc -b --force PASS; git diff --check PASS.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Adicionales: npm run dev -- --host 127.0.0.1, Chrome headless/CDP para comprobar A–D en un perfil temporal aislado.
+
+## QA y cierre formal de T23
+
+Valerio aprobó T23: PASS — READY TO CLOSE T23; 357 tests PASS en 23 archivos y regresiones Home/Active Walk/persistencia/Leaflet/Chart.js aprobadas, sin defectos ni bloqueos. Validación independiente Chrome/CDP con IndexedDB real aislada: orden temporal fuera de orden de inserción, búsqueda/fechas AND y limpieza de filtros, incomplete sin recuperación, navegación al detalle placeholder, confirmación/cancelación/Delete persistido. Fallo inyectado en WalkRepository.delete después de borrar puntos confirmó rollback real: Walk y sus dos puntos permanecieron; retry eliminó A y conservó B y sus puntos, incluso tras recargar. Error de lectura normalizado con retry. Tres ciclos /walk → /history → /walk conservaron sesión/puntos y watcher único; Pause/Resume/Finish operativos (starts=1, clears=1). History no inicia/detiene tracking ni limpia activeSession. Viewports 390×844/1280×800 y teclado PASS; sin errores inesperados de consola. Fixtures aisladas eliminadas al finalizar. Rename diferido a T24 según plan. El cierre solo actualiza documentación; T24 no ha comenzado.
+
+Validación final de cierre T23: Node 24.21.0/npm 11.19.0; 357 tests PASS en 23 archivos (10.59 s), incluidos History, Delete/anti-orphan/rollback, búsqueda/fechas, navegación al detalle y regresión Home/Active Walk. Build PASS (63 módulos, 450 ms); lint PASS sin advertencias; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T24 sin iniciar: WalkDetail sigue placeholder, fuentes intactas y sin funcionalidad adicional.
+
+## Historial del cierre de T22
 
 T22 — Home View.
 

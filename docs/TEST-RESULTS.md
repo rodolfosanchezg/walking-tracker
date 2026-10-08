@@ -553,3 +553,42 @@ Evidencia de navegador: Chrome real mediante CDP y GPS/tiles simulados, sin inte
 Cierre formal autorizado por el usuario; CURRENT_STATE y README actualizados. Evidencia histórica anterior conservada. Sin funcionalidad nueva ni dependencias adicionales; fuentes intactas. T23–T28 no iniciadas.
 
 Validación final de cierre T22: Node 24.21.0/npm 11.19.0; 332 tests PASS en 21 archivos (9.34 s), incluidos Home, protección contra segundo Start, lifecycle y regresión T19–T21. Build PASS (61 módulos, 390 ms); lint PASS; tsc -b --force PASS; git diff --check PASS. Se confirmó T23 sin iniciar antes del commit: History conserva el placeholder y las fuentes permanecen intactas.
+
+
+## T23 — History View — 2026-10-08
+
+Verificación de Aurelio; pendiente de revisión independiente QA y cierre. Sin commit; T24 no ha comenzado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Listado/resumen/orden | PASS | WalkRepository.list, nombre/fecha local/km/duración activa; startedAt descendente con id como desempate; incomplete identificado. |
+| Búsqueda/fechas | PASS | Parcial/case-insensitive/trim; from/to opcionales inclusivos y AND; inválidos controlados sin mutación. |
+| Loading/empty/error | PASS | Estados explícitos, retry de lectura y errores sin información técnica cruda. |
+| Navegación | PASS | React Router a Home y /walk/:walkId; detalle permanece placeholder T05. |
+| Delete | PASS | Confirmación/cancelación, bloqueo de duplicados, actualización/error/retry. Transacción Walk+puntos, rollback ante fallo y protección de sesión persistida. |
+| Persistencia/anti-orphan | PASS | fake-indexeddb: borra puntos relacionados, conserva otros, reabre, revierte fallo y limpia bases tras casos. |
+| Rename | Diferido | Nombre editable asignado explícitamente a T24 en IMPLEMENTATION-PLAN; sin ampliación de alcance. |
+| Automatizadas | PASS | 357 pruebas,23 archivos;20 History View y5 History Store nuevos; navegación previa adaptada al listado persistido. |
+| Build/lint/TypeScript/diff | PASS | 63 módulos/448 ms; lint sin advertencias, tsc -b --force y git diff --check sin errores. |
+| Navegador A–D | PASS | Chrome/CDP, IndexedDB real aislada con fixtures: vacío/Home; orden/resumen/incomplete/filtros; detalle placeholder; cancelar/confirmar/Delete/reload/puntos0. |
+| Responsive/consola | PASS | 390×844/1280×800, sin overflow ni errores JS/consola. Base de fixtures eliminada al terminar. |
+| Alcance | PASS | Fuentes/README/T24–T28 intactos, sin dependencias nuevas ni GPS/recovery/UI de detalle. |
+
+Primer run tuvo una expectativa obsoleta de navegación (Ver detalle de ejemplo), reemplazada por una caminata mockeada sin retirar cobertura de rutas. Advertencia lint de setState síncrono en efecto eliminada; validación final completa PASS. Evidencia histórica anterior preservada.
+
+Limitaciones: Rename T24 diferido; listado refresca al entrar/reintentar, sin suscripción en vivo; filtros en memoria, días locales; protección de Walk vinculado a activeSession. Navegador automatizado con fixtures sintéticas, sin interacción humana ni GPS real afirmados. Safari/iPhone/performance de historiales grandes NOT TESTED.
+
+Validación final T23: Node 24.21.0/npm 11.19.0. Tests PASS: 357 pruebas en 23 archivos, 9.57 s (332 anteriores +25 nuevas); regresiones T19–T22 incluidas. Build PASS: 63 módulos, 448 ms. Lint PASS sin advertencias; TypeScript tsc -b --force PASS; git diff --check PASS.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Adicionales: npm run dev -- --host 127.0.0.1, Chrome headless/CDP para comprobar A–D en un perfil temporal aislado.
+
+
+### QA independiente y cierre de T23 — 2026-10-08
+
+Valerio: STATUS: PASS — READY TO CLOSE T23. Sin defectos QA-T23 ni bloqueos. 357 tests PASS en 23 archivos; build PASS (63 módulos/514 ms), lint sin advertencias, TypeScript y git diff --check PASS. Cobertura History de orden, búsqueda, fechas inclusivas/AND, incomplete, loading/empty/error, navegación, Delete y rollback; regresión Home/Active Walk/persistencia/Leaflet/Chart.js aprobada. Rename NOT TESTED porque se difirió a T24 con fundamento explícito en el plan y CURRENT_STATE, sin UI incompleta.
+
+Validación independiente en Chrome/CDP con IndexedDB real aislada y fixtures sintéticas: A inserción Oct1/Oct7/Oct3 → listado Oct7/Oct3/Oct1; B búsqueda parcial/case-insensitive/trim + rango AND y limpiar restaura listado; C Delete A elimina sus puntos, conserva B/puntos y persiste al recargar; D fallo inyectado después de borrar puntos revierte la transacción, conserva Walk y sus dos puntos, muestra error sin éxito falso y permite retry; E incomplete visible sin flujo T26. Error de lectura normalizado y retry aprobados. Tres ciclos Active Walk/History mantienen sesión, puntos y watcher único; Pause/Resume/Finish válidos, starts=1/clears=1. Viewports390×844/1280×800, Tab y consola PASS. El harness requirió una espera adicional entre rutas, sin defecto de producto. Fixtures eliminadas; no GPS real ni interacción humana afirmados.
+
+Cierre formal autorizado; CURRENT_STATE/README actualizados y toda evidencia histórica conservada. T24 no ha comenzado; fuentes intactas. Safari/iPhone e historiales grandes NOT TESTED.
+
+Validación final de cierre T23: Node 24.21.0/npm 11.19.0; 357 tests PASS en 23 archivos (10.59 s), incluidos History, Delete/anti-orphan/rollback, búsqueda/fechas, navegación al detalle y regresión Home/Active Walk. Build PASS (63 módulos, 450 ms); lint PASS sin advertencias; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T24 sin iniciar: WalkDetail sigue placeholder, fuentes intactas y sin funcionalidad adicional.
