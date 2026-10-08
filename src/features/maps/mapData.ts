@@ -2,7 +2,7 @@ import type { TrackingSnapshot } from '../tracking/trackingController'
 export type MapCoordinate = [number, number]
 
 /** Adaptación visual: misma elegibilidad que distancia T12; no reclasifica ni calcula métricas. */
-export function toMapData(snapshot: TrackingSnapshot) {
+export function toMapData(snapshot: Pick<TrackingSnapshot, 'rawPoints'>) {
   const segments: MapCoordinate[][] = []
   let current: MapCoordinate[] | undefined
   let previousSegment: number | null = null

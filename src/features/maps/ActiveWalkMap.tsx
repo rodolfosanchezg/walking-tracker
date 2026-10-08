@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { TrackingSnapshot } from '../tracking/trackingController'
 import { toMapData } from './mapData'
 import { MAP_CONFIG } from './mapConfig'
 
-export default function ActiveWalkMap({ snapshot }: { snapshot: TrackingSnapshot }) {
+export default function ActiveWalkMap({ snapshot, mode = 'active' }: { snapshot: Pick<TrackingSnapshot, 'rawPoints' | 'trackingStatus'>; mode?: 'active' | 'saved' }) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const route = useRef<L.Polyline | null>(null)
@@ -15,7 +15,7 @@ export default function ActiveWalkMap({ snapshot }: { snapshot: TrackingSnapshot
   const previousStatus = useRef<TrackingSnapshot['trackingStatus']>('idle')
   const [following, setFollowing] = useState(true)
   const [tileError, setTileError] = useState(false)
-  const data = toMapData(snapshot)
+  const data = useMemo(() => toMapData({ rawPoints: snapshot.rawPoints }), [snapshot.rawPoints])
 
   useEffect(() => {
     const element = container.current!
@@ -24,7 +24,7 @@ export default function ActiveWalkMap({ snapshot }: { snapshot: TrackingSnapshot
     const tiles = L.tileLayer(MAP_CONFIG.tilesUrl, { attribution: MAP_CONFIG.attribution, maxZoom: MAP_CONFIG.maximumZoom }).addTo(instance)
     const onTileError = () => setTileError(true)
     tiles.on('tileerror', onTileError)
-    const suspend = () => { follow.current = false; setFollowing(false) }
+    const suspend = () => { if (mode === 'active') { follow.current = false; setFollowing(false) } }
     for (const event of ['pointerdown', 'wheel', 'keydown']) element.addEventListener(event, suspend)
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => instance.invalidateSize({ pan: false }))
     observer?.observe(element)
@@ -34,13 +34,18 @@ export default function ActiveWalkMap({ snapshot }: { snapshot: TrackingSnapshot
       for (const event of ['pointerdown', 'wheel', 'keydown']) element.removeEventListener(event, suspend)
       instance.remove(); map.current = null; route.current = null; marker.current = null; lastPosition.current = null
     }
-  }, [])
+  }, [mode])
 
   useEffect(() => {
     const instance = map.current
     if (!instance) return
     if (data.segments.length && !route.current) route.current = L.polyline(data.segments, { color: '#164e80', weight: 4 }).addTo(instance)
     else route.current?.setLatLngs(data.segments)
+    if (mode === 'saved') {
+      const coordinates = data.segments.flat()
+      if (coordinates.length) instance.fitBounds(L.latLngBounds(coordinates), { padding: [20, 20], maxZoom: MAP_CONFIG.trackingZoom })
+      return
+    }
     if (data.position) {
       if (!marker.current) marker.current = L.circleMarker(data.position.coordinates, { radius: 8, color: '#ffffff', weight: 3,
         fillColor: '#c73516', fillOpacity: 1 }).addTo(instance).bindTooltip('Última posición GPS válida')
@@ -54,7 +59,7 @@ export default function ActiveWalkMap({ snapshot }: { snapshot: TrackingSnapshot
       if (coordinates.length) instance.fitBounds(L.latLngBounds(coordinates), { padding: [20, 20], maxZoom: MAP_CONFIG.trackingZoom })
     }
     previousStatus.current = snapshot.trackingStatus
-  }, [data, snapshot.trackingStatus])
+  }, [data, snapshot.trackingStatus, mode])
 
   function recenter() {
     follow.current = true; setFollowing(true)
@@ -62,9 +67,11 @@ export default function ActiveWalkMap({ snapshot }: { snapshot: TrackingSnapshot
   }
   return <section aria-label="Mapa de la caminata">
     <div ref={container} className="active-walk-map" role="region" aria-label="Mapa interactivo de posición y ruta" />
-    <button type="button" onClick={recenter} disabled={!data.position}>Centrar y seguir posición</button>
+    {mode === 'active' && <><button type="button" onClick={recenter} disabled={!data.position}>Centrar y seguir posición</button>
     <p>{following ? 'Seguimiento automático habilitado.' : 'Mapa libre: seguimiento automático suspendido.'} La ruta excluye pausas y puntos no aptos.</p>
     {!data.position && <p>Esperando la primera posición GPS válida.</p>}
-    {tileError && <p role="status">El fondo del mapa no está disponible. El tracking y sus controles siguen funcionando.</p>}
+    </>}
+    {mode === 'saved' && <p>Ruta guardada. Puedes mover y ampliar el mapa; no representa ubicación en vivo.{!data.segments.length && ' No hay coordenadas aptas disponibles.'}</p>}
+    {tileError && <p role="status">{mode === 'saved' ? 'El fondo del mapa no está disponible. Los datos guardados siguen disponibles.' : 'El fondo del mapa no está disponible. El tracking y sus controles siguen funcionando.'}</p>}
   </section>
 }

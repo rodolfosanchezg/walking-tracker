@@ -4,11 +4,11 @@ Proyecto de aplicación web móvil para registrar caminatas mediante GPS, orient
 
 ## Estado
 
-T00–T23 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. Home en /, Active Walk en /walk e History en /history son funcionales; Detalle y Configuración siguen siendo vistas base.
+T00–T24 están completadas y cerradas tras aprobación y validación QA. React + TypeScript + Vite, testing y navegación SPA están operativos. Los modelos, Dexie/IndexedDB v1, repositories, servicios, métricas y estado de sesión cuentan con pruebas. Home en /, Active Walk en /walk, History en /history y Walk Detail en /walk/:walkId son funcionales; Configuración sigue siendo vista base.
 
-La siguiente tarea pendiente es **T24 — Walk Detail View**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
+La siguiente tarea pendiente es **T25 — Settings View**. No ha comenzado y requiere autorización explícita. T17 conecta en memoria el estado de sesión T16, geolocalización T09, clasificación T14 y métricas T12–T15; T18 agrega la composición opcional con persistencia por bloques; T19 conecta esa composición con la UI de /walk.
 
-Estado del repositorio tras T23: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19 y Leaflet T20 y Chart.js T21 y Home T22 y History T23; 357 pruebas en 23 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
+Estado del repositorio tras T24: base técnica, navegación, modelos, persistencia local y repositories, servicios T09–T11, métricas T12–T15, sesión T16, orquestador T17 y persistencia por bloques T18 y Active Walk View T19 y Leaflet T20 y Chart.js T21 y Home T22 y History T23 y Walk Detail T24; 381 pruebas en 25 archivos. QA-T18-001 quedó RESOLVED tras corrección y revalidación PASS, conservando el FAIL histórico. QA-T17-001 fue corregido y revalidado como RESOLVED, conservando el FAIL inicial en la documentación.
 
 ## Stack y dependencias instaladas
 
@@ -21,7 +21,7 @@ Estado del repositorio tras T23: base técnica, navegación, modelos, persistenc
 ## Estructura actual
 
 - `docs/`: requisitos, decisiones, arquitectura, plan de implementación, estado y evidencias de validación.
-- `src/`: estructura aprobada, router/layout compartido, Home, caminata activa, historial y páginas base de detalle/configuración, entrada React y CSS móvil simple.
+- `src/`: estructura aprobada, router/layout compartido, Home, caminata activa, historial, detalle guardado y página base de configuración, entrada React y CSS móvil simple.
 - `src/types/`: modelos y estados sin implementación runtime, independientes de React y persistencia.
 - `src/data/db/`: factory Dexie y esquema v1, sin apertura automática ni conexión desde React.
 - `src/data/repositories/`: acceso a caminatas, puntos, sesión activa y ajustes mediante APIs independientes de React; historyStore coordina eliminación transaccional de Walk y sus puntos.
@@ -71,6 +71,7 @@ src/
 │   ├── history/
 │   │   ├── HistoryPage.tsx
 │   │   ├── historyFilters.ts
+│   │   ├── savedWalkData.ts
 │   │   └── WalkDetailPage.tsx
 │   ├── settings/SettingsPage.tsx
 │   └── maps/
@@ -92,6 +93,7 @@ src/
 │   │   ├── SettingsRepository.ts
 │   │   ├── trackingPersistenceStore.ts
 │   │   ├── historyStore.ts
+│   │   ├── walkDetailStore.ts
 │   │   └── index.ts
 │   └── migrations/
 ├── domain/
@@ -256,7 +258,7 @@ Muestra tiempo activo/total, distancia en km, velocidad promedio en km/h, ritmo 
 
 Finish requiere confirmación; cancelarla conserva tracking. La acción confirmada usa flush/transacción final T18; solo muestra éxito tras persistencia confirmada. Ante fallo permite reintentar y conserva recovery state. El snapshot se actualiza cada segundo; desmontar elimina el timer de UI y mantiene el runtime por pestaña, sin duplicar watchers al volver. No recupera la sesión tras recargar.
 
-QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. T20 integra el mapa; T21 integra el perfil Chart.js. Permanecen pendientes recuperación interactiva (T26), Page Visibility (T27) y Wake Lock (T28); la siguiente tarea es T24.
+QA aprobó T19 con 294 pruebas y verificación en Chrome real con GPS simulado, viewport390x844, flujo completo, errores y remontaje. T20 integra el mapa; T21 integra el perfil Chart.js. Permanecen pendientes recuperación interactiva (T26), Page Visibility (T27) y Wake Lock (T28); la siguiente tarea es T25.
 
 ## Mapa Leaflet integrado — T20
 
@@ -268,7 +270,7 @@ Tiles raster OpenStreetMap con atribución/configuración centralizada. Si no ca
 
 El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, posición, ruta y estado GPS, y mover/ampliar el mapa. QA aprobó T20 y regresión T19 con 308 pruebas; Chrome390x844 con GPS/tiles simulados confirmó pausa/resume, anomalía excluida, pan/zoom y finalización. Tiles reales de Internet, GPS real/iPhone y rendimiento de caminatas largas siguen pendientes de validación.
 
-Siguientes tareas pendientes: T24 Walk Detail; T25 Settings; T26 Recovery; T27 Page Visibility; T28 Wake Lock. No se han iniciado en esta entrega.
+Siguientes tareas pendientes: T25 Settings; T26 Recovery; T27 Page Visibility; T28 Wake Lock. No se han iniciado en esta entrega.
 
 ## Perfil de elevación integrado — T21
 
@@ -276,7 +278,7 @@ Siguientes tareas pendientes: T24 Walk Detail; T25 Settings; T26 Recovery; T27 P
 
 Con menos de dos altitudes procesadas disponibles muestra estado vacío. Al llegar puntos actualiza datasets sin recrear la instancia, con animación desactivada. Pause conserva el perfil, Resume continúa con otro segmento y Finish mantiene perfil, mapa y métricas. Destroy al desmontar retira la instancia/listeners; T19/T20 siguen operativos.
 
-El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, mapa/ruta/posición actual y perfil distancia-altitud, conservando mapa/perfil después de Finish. Unidades métricas fijas; Settings aún no integrado. La recuperación interactiva T26, Page Visibility T27 y Wake Lock T28 siguen pendientes, junto a Walk Detail T24 y Settings T25.
+El usuario puede iniciar/pausar/reanudar/finalizar, ver métricas, mapa/ruta/posición actual y perfil distancia-altitud, conservando mapa/perfil después de Finish. Unidades métricas fijas; Settings aún no integrado. La recuperación interactiva T26, Page Visibility T27 y Wake Lock T28 siguen pendientes, junto a Settings T25.
 
 QA aprobó T21 con 322 pruebas y Chrome390x844 con GPS/tiles simulados: actualización estable, pico vertical3000 excluido por T15, pausa/resume, interpolación marcada, dos desmontajes/remontajes y perfil final. GPS real/iPhone y rendimiento de caminatas largas todavía pendientes.
 
@@ -288,19 +290,33 @@ Con sesión active/paused muestra el estado textual, oculta un segundo Start y o
 
 El usuario puede entrar desde Home, iniciar en Active Walk, volver a una sesión activa/pausada y consultar métricas, mapa/ruta/posición y perfil de elevación. QA aprobó T22 con 332 pruebas en 21 archivos, regresión T19–T21 y Chrome con GPS/tiles simulados en móvil/desktop.
 
-Siguiente tarea: **T24 — Walk Detail View**, todavía no iniciada. History T23 ya permite consultar, buscar, filtrar y eliminar registros; Walk Detail T24, Settings T25, Recovery T26, Page Visibility T27 y Wake Lock T28 están pendientes. GPS real/iPhone y caminatas prolongadas siguen pendientes de validación.
+Siguiente tarea: **T25 — Settings View**, todavía no iniciada. History T23 ya permite consultar, buscar, filtrar y eliminar registros; Walk Detail T24 ya permite consultar resumen/mapa/perfil y renombrar; Settings T25, Recovery T26, Page Visibility T27 y Wake Lock T28 están pendientes. GPS real/iPhone y caminatas prolongadas siguen pendientes de validación.
 
 ## History integrada — T23
 
 /history carga Walks mediante historyStore/WalkRepository y muestra nombre, fecha local, distancia en km, duración activa y estado. Ordena más reciente primero por startedAt, con desempate por id. La búsqueda parcial ignora mayúsculas y espacios exteriores; Desde/Hasta opcionales e inclusivos se combinan con nombre mediante AND. Loading, vacío, sin resultados y error de lectura con retry son explícitos.
 
-Los registros incomplete aparecen identificados como caminatas guardadas, sin activar Continue/Save/Discard ni recuperación T26. Cada caminata abre /walk/:walkId mediante React Router; Walk Detail aún es placeholder. Rename está pendiente de T24, según el plan.
+Los registros incomplete aparecen identificados como caminatas guardadas, sin activar Continue/Save/Discard ni recuperación T26. Cada caminata abre /walk/:walkId mediante React Router; Walk Detail T24 muestra resumen, mapa/perfil y permite Rename.
 
 Delete exige confirmación; cancelar conserva datos. historyStore elimina puntos y Walk en una transacción: evita puntos huérfanos, revierte todo ante fallo y conserva otras caminatas. Protege registros vinculados a activeSession persistida, sin limpiar ni recuperar esa sesión. History no inicia/finaliza tracking ni detiene watchers al navegar. Carga al entrar/reintentar, sin actualización en vivo ni paginación.
 
 Capacidades actuales: entrar desde Home, iniciar/pausar/reanudar/finalizar, visualizar métricas/mapa/perfil de elevación, persistir en bloques y consultar/buscar/filtrar/eliminar historial. QA aprobó T23 con 357 pruebas en 23 archivos, rollback real verificado, persistencia tras recarga y regresión Home/Active Walk. Las pruebas de navegador usan datos sintéticos en un perfil aislado; Safari/iPhone e historiales grandes siguen pendientes de validación.
 
-Siguiente tarea: **T24 — Walk Detail View**, no iniciada. Settings T25, Recovery T26, Visibility T27 y Wake Lock T28 permanecen pendientes; no se implementó export CSV.
+Siguiente tarea: **T25 — Settings View**, no iniciada. Settings T25, Recovery T26, Visibility T27 y Wake Lock T28 permanecen pendientes; no se implementó export CSV.
+
+## Walk Detail integrado — T24
+
+/walk/:walkId consulta Walk y TrackPoints mediante walkDetailStore y los repositories. Muestra nombre, fecha/hora de inicio y finalización, duración activa/transcurrida, distancia, velocidad/ritmo promedio, elevación ganada/perdida y estado/incomplete. Usa el resumen persistido sin recalcular métricas, helpers de unidades existentes y mensajes para loading/not found/error. Incomplete muestra datos parciales sin recuperación T26.
+
+Reutiliza Leaflet T20 en modo guardado: ruta, fitBounds seguro con0/1/múltiples puntos, pan/zoom manual; sin posición en vivo ni auto-follow. Reutiliza Chart.js T21/T15 para perfil final con altitud procesada y distancia acumulada, estados insuficientes y exclusión de anomalías. El detalle no inicia GPS/watchers, no altera activeSession ni controla tracking global.
+
+Rename permite editar nombre prellenado, trim, rechazar vacío y actualizar mediante WalkRepository; el nuevo nombre permanece tras recargar y al volver a History. Un Walk asociado a activeSession pendiente se protege de cambios que el runtime podría sobrescribir. Delete sigue disponible en History con confirmación, transacción y prevención de puntos huérfanos, sin duplicación en detalle.
+
+Limitación vigente: T18 limpia los metadatos de segmentos/calidad evaluada al finalizar. Cuando están disponibles, mapa/perfil respetan pausas; cuando faltan, la UI advierte que pueden incluir desplazamientos de pausa y diferir del resumen guardado. No se inventan pausas ni se modifica el esquema; clasificación visual reutiliza T14 y preserva raw GPS. El resumen mantiene los valores persistidos.
+
+Capacidades actuales: iniciar/pausar/reanudar/finalizar y persistir caminatas, ver métricas/mapa/perfil activo, consultar/buscar/filtrar historial, abrir detalle con ruta/perfil guardados, identificar incomplete, renombrar en detalle y eliminar desde History. QA aprobó T24 con381 pruebas en25 archivos, navegador aislado y regresión History/Active Walk. Safari/iPhone y rendimiento prolongado siguen pendientes.
+
+Siguiente tarea: **T25 — Settings View**, no iniciada. Recovery T26, Page Visibility T27 y Wake Lock T28 siguen pendientes; sin export CSV.
 
 ## Modelos TypeScript definidos
 
@@ -324,7 +340,7 @@ React Router utiliza BrowserRouter, rutas anidadas y un layout compartido con na
 | `/walk/:walkId` | Walk Detail / Detalle de caminata |
 | `/settings` | Settings / Configuración |
 
-Historial ofrece enlaces a `/walk/:walkId` para registros persistidos. El detalle todavía muestra el identificador de URL y permite volver al historial; sus datos, mapa/perfil y Rename corresponden a T24.
+Historial ofrece enlaces a `/walk/:walkId` para registros persistidos. El detalle muestra el resumen persistido, mapa/perfil y Rename, y permite volver al historial o Home.
 
 ## Documentación
 
@@ -360,7 +376,7 @@ npm run lint
 
 ## Limitaciones vigentes
 
-- Home, /walk e /history son funcionales; Walk Detail y Settings siguen siendo vistas base. La base local y los repositories están definidos y probados, sin acceso directo desde componentes; la UI activa los utiliza mediante T18 y su runtime. El servicio de geolocalización está probado con mocks, con flujo de caminata en memoria mediante T17 y persistencia T18 y UI activa T19.
+- Home, /walk, /history y /walk/:walkId son funcionales; Settings sigue siendo vista base. La base local y los repositories están definidos y probados, sin acceso directo desde componentes; la UI activa los utiliza mediante T18 y su runtime. El servicio de geolocalización está probado con mocks, con flujo de caminata en memoria mediante T17 y persistencia T18 y UI activa T19.
 - Las pruebas con fake-indexeddb no validan cuotas, políticas de Safari ni durabilidad física. Las claves fijas son una convención tipada; IndexedDB no impone por sí solo singletons ni claves foráneas.
 - readonly no congela objetos en runtime; validaciones de dominio adicionales, filtrado definitivo de rutas, estimación de tracking y recuperación siguen pendientes de implementación.
 - Navegación y layout móvil validados en Chrome emulado a 320 px. El soporte de accesos directos y base path en GitHub Pages se validará en T32; el despliegue aún no está configurado.

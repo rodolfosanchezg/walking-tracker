@@ -592,3 +592,40 @@ Validación independiente en Chrome/CDP con IndexedDB real aislada y fixtures si
 Cierre formal autorizado; CURRENT_STATE/README actualizados y toda evidencia histórica conservada. T24 no ha comenzado; fuentes intactas. Safari/iPhone e historiales grandes NOT TESTED.
 
 Validación final de cierre T23: Node 24.21.0/npm 11.19.0; 357 tests PASS en 23 archivos (10.59 s), incluidos History, Delete/anti-orphan/rollback, búsqueda/fechas, navegación al detalle y regresión Home/Active Walk. Build PASS (63 módulos, 450 ms); lint PASS sin advertencias; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T24 sin iniciar: WalkDetail sigue placeholder, fuentes intactas y sin funcionalidad adicional.
+
+
+## T24 — Walk Detail View — 2026-10-08
+
+Verificación de Aurelio, pendiente de QA/cierre, sin commit; T25 no ha comenzado. Historial anterior preservado.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| Datos/carga | PASS | WalkRepository.getById/TrackPointRepository.getByWalkId, loading/not found/error, sin Dexie/Geolocation/watcher desde React. |
+| Resumen | PASS | Nombre/fechas, tiempos activo/transcurrido, distancia/promedios/elevación, incomplete; datos persistidos, helpers T13 y null seguro. |
+| Mapa T20 | PASS | mode=saved, fitBounds0/1/múltiples, anomalous excluido, sin marker/follow; pan/zoom no recentra; cleanup y regresión active. |
+| Perfil T21/T15 | PASS | Altitud procesada km/m, estados insuficientes, segmentos/metadatos y anomalías sin pico raw; sin métricas duplicadas. |
+| Rename | PASS | Trim, vacío/error/cancelación/retry; WalkRepository.update, reapertura/History; protección de sesión persistida, sin mutarla. |
+| Delete | No aplica | Disponible con confirmación y anti-orphan en History T23; no se duplica en detalle. |
+| Tests | PASS | 381 pruebas en25 archivos,11.29 s;24 nuevas T24, anteriores incluidas. |
+| Build | PASS | 65 módulos,412 ms. |
+| Lint/TypeScript/diff | PASS | Sin advertencias/errores. |
+| Navegador | PASS | Chrome/CDP A completa,mapa/perfil;B incomplete;C not found;D Rename/trim/reload/History;0/1 puntos;watchPosition0. |
+| Responsive/consola | PASS | 390×844/1280×800 sin overflow ni errores finales. |
+| Scope | PASS | README/fuentes/T18/esquema intactos; sin T25–T28/CSV/dependencias nuevas. |
+
+Limitación explícita: registros finalizados T18 pierden pointMetadata al limpiar activeSession; no se puede reconstruir segmentación de pausas con Walk/TrackPoint solos. Se usa cuando está disponible y se advierte cuando falta. Ruta/perfil visual reconstruido puede incluir desplazamientos de pausa y diferir del resumen guardado, que no se recalcula. No se cambió esquema ni inventó heurística de pausas. Calidad visual sin metadata reutiliza T14, conservando raw/clasificaciones explícitas.
+
+Pruebas: walkDetail.test.tsx15 casos RTL con mocks mapa/perfil/store; walkDetailStore.test.ts5 casos con IndexedDB en memoria aislada y limpieza; activeWalkMap.test.tsx4 casos nuevos para modo saved; navegación adaptada al detalle real. Primeras ejecuciones detectaron configuración incorrecta de test.each y tipado literal de fixtures, corregidos; final completa PASS. Browser con perfil aislado, IndexedDB real/fixtures sintéticas/tiles simulados; harness sincronizado a documento nuevo tras recarga, sin cambios de producto por ese fallo. Base de fixtures eliminada. No interacción humana/GPS real afirmados; Safari/iPhone/performance prolongada NOT TESTED.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all; Vite dev y Chrome/CDP aislado para navegador. Node24.21.0/npm11.19.0.
+
+
+### QA independiente y cierre formal de T24 — 2026-10-08
+
+Valerio: STATUS: PASS — READY TO CLOSE T24. 381 tests PASS en25 archivos (10.94 s); build PASS (65 módulos/453 ms), lint sin advertencias, TypeScript y git diff --check PASS. Sin defectos QA-T24 ni bloqueos; regresión T23 y anteriores PASS. Cobertura loading/loaded/not found/error, resumen persistido completo, mapa/perfil, incomplete, anomalías, Rename y navegación; sin tracking vivo/Geolocation/Dexie directo desde React. Delete en detalle NOT TESTED/no aplica, suficientemente resuelto en History.
+
+Escenarios independientes Chrome/CDP: A métricas persistidas correctas, ruta/fitBounds y pan/zoom; B incomplete con dos segmentos y pausa excluida según metadatos; C inexistente con retorno a History sin crash/watchers; D raw anomalous preservado, ruta sin salto y perfil sin pico3000; E Rename vacío/error/retry/trim/reload/History, conservando pan manual. Cero/un punto/sin altitud PASS. watchPosition0/clearWatch0; activeSession y raw preservados; fixtures eliminadas. 390×844/1280×800 sin overflow ni errores inesperados de consola finales. Una variable redeclarada del script QA se corrigió al repetir; no implicó cambios al producto.
+
+Limitación documentada de segmentación tras finalización T18 permanece: se respeta cuando los datos permiten reconstruirla; cuando faltan, la UI advierte y conserva el resumen persistido. No se alteró T18/modelos/esquema. Safari/iPhone/performance prolongada NOT TESTED. CURRENT_STATE y README actualizados para cierre, evidencia histórica conservada; T25 no ha comenzado.
+
+Validación final de cierre T24: Node 24.21.0/npm 11.19.0; 381 tests PASS en25 archivos (12.02 s), incluidos detalle, mapa/perfil guardados, not found, incomplete, Rename y regresión History/Delete/Home/Active Walk. Build PASS (65 módulos,428 ms); lint PASS sin advertencias; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T25 sin iniciar: Settings continúa placeholder, fuentes intactas y sin funcionalidad adicional.

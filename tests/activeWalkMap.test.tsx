@@ -114,3 +114,21 @@ test('Active Walk integra el contenedor de mapa sin iniciar GPS', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('Sin caminata')
   expect(mocks.createMap).toHaveBeenCalledTimes(1)
 })
+
+
+test.each([[], [point('a',0)], [point('a',0),point('b',0.001)]].map(points=>({points})))('modo saved ajusta bounds sin marker/follow, con 0/1/múltiples puntos', ({points}) => {
+  render(<ActiveWalkMap snapshot={snapshot(points,'finished')} mode="saved" />)
+  expect(mocks.circleMarker).not.toHaveBeenCalled(); expect(mocks.map.panTo).not.toHaveBeenCalled()
+  expect(mocks.map.fitBounds).toHaveBeenCalledTimes(points.length?1:0)
+  expect(screen.queryByRole('button', { name: 'Centrar y seguir posición' })).not.toBeInTheDocument()
+})
+
+test('saved conserva pan/zoom manual al rerender sin puntos nuevos', () => {
+  const saved = snapshot([point('a',0),point('b',0.001)],'finished')
+  const view = render(<ActiveWalkMap snapshot={saved} mode="saved" />)
+  fireEvent.pointerDown(screen.getByRole('region', { name: 'Mapa interactivo de posición y ruta' }))
+  fireEvent.wheel(screen.getByRole('region', { name: 'Mapa interactivo de posición y ruta' }))
+  view.rerender(<ActiveWalkMap snapshot={saved} mode="saved" />)
+  expect(mocks.map.fitBounds).toHaveBeenCalledTimes(1)
+  expect(mocks.map.panTo).not.toHaveBeenCalled()
+})

@@ -6,7 +6,7 @@ import type { ElevationChartPoint } from './elevationProfileData'
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip)
 
-export default function ElevationProfile({ snapshot }: { snapshot: TrackingSnapshot }) {
+export default function ElevationProfile({ snapshot }: { snapshot: Pick<TrackingSnapshot, 'rawPoints'> }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const chart = useRef<Chart<'line', ElevationChartPoint[], number> | null>(null)
   const points = snapshot.rawPoints

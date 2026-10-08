@@ -4,6 +4,44 @@ Fecha: 2026-10-08 (America/Bogota).
 
 ## Tarea ejecutada
 
+T24 — Walk Detail View.
+
+Estado: T24 CLOSED; cierre formal autorizado por el usuario tras aprobación de Valerio: PASS — READY TO CLOSE T24. T25 no ha comenzado; T26–T28 fuera del alcance.
+
+## Detalle implementado en T24
+
+/walk/:walkId carga Walk y sus TrackPoints mediante walkDetailStore.get y los repositories T08. Lectura transaccional coherente; consulta únicamente metadatos de activeSession cuando corresponden al mismo walkId, sin modificarla ni recuperar sesiones. Conexión por operación cerrada en finally. React no usa Dexie, Geolocation, watcher ni runtime de tracking. DetailLoader protege lecturas tras desmontar; key por ID reinicia carga al cambiar ruta.
+
+Muestra nombre, fecha/hora inicio y finalización, tiempo activo/transcurrido, distancia, velocidad y ritmo promedio, ganancia/pérdida, estado/incomplete y aviso de métricas estimadas cuando aplica. Resumen tomado directamente del Walk persistido: no recalcula métricas; null/inválidos se muestran como No disponible. Unidades métricas existentes: km, km/h, min/km y elevación en m usando helpers T13. Fechas en zona local del navegador. Loading/not found/error normalizados y Links a History/Home. Incomplete conserva datos disponibles y no ofrece Continue/Save/Discard T26.
+
+Mapa reutilizado ActiveWalkMap/toMapData T20, con mode=saved: polyline segmentada, fitBounds de coordenadas aptas (incluido un punto), estado claro con cero puntos; sin marcador de ubicación en vivo ni auto-follow. Pan/zoom manual disponibles y no se recentra al interactuar/rerender sin cambios. Instancia y listeners se limpian al desmontar; modo active conserva comportamiento probado. mapData acepta contrato mínimo rawPoints y el componente memoriza la adaptación por referencia, sin modificar fórmulas.
+
+Perfil reutilizado ElevationProfile/toElevationChartData T21 y buildElevationProfile T15; eje X distancia acumulada km/Y altitud procesada m, no raw sin tratamiento. Sin datos/una altitud muestran mensaje; nulls/estimaciones/anomalías siguen políticas existentes. Contrato reducido a rawPoints permite reutilizarlo sin construir un controlador ni snapshot funcional.
+
+savedWalkData prepara CapturedPoints visuales sin mutar entradas ni recalcular resumen. Usa segment/quality de pointMetadata cuando disponible; sin metadatos reutiliza T14 para evaluar raw GPS y conserva clasificaciones explícitas no-valid ya almacenadas. Anomalous no extiende ruta y pico raw no entra en perfil como altitud válida.
+
+Hallazgo/limitación: T18 guarda segment/quality evaluada en activeSession y elimina ese registro al finalizar. Walk/TrackPoint no conservan por sí mismos segmentación de pausas. T24 respeta metadatos completos cuando existen; para registros sin ellos adapta puntos como un tramo y muestra advertencia explícita de que ruta/perfil pueden incluir desplazamientos durante pausa. No infiere pausas a partir de timestamps ni cambia T18/modelos/esquema. El resumen conserva métricas guardadas, aunque el perfil reconstruido pueda diferir. Esta limitación cumple el alcance condicionado a información persistida disponible y queda para evaluación QA/arquitectónica futura.
+
+Rename implementado: edición prellenada, trim y rechazo de vacío, WalkRepository.update, actualización del heading y persistencia comprobada por recarga/History. Errores visibles sin texto técnico; retry y cancelación seguros, controles bloqueados durante guardado. No se crea un Walk ausente. Se rechaza Rename del Walk asociado a una sesión pendiente persistida para evitar sobrescritura por el runtime, sin modificar activeSession. Delete permanece en History con estrategia transaccional T23; no se duplicó acción/lógica de borrado en detalle.
+
+## Pruebas y validación T24 — 2026-10-08
+
+24 casos nuevos: tests/walkDetail.test.tsx (15 casos de carga, resumen, incomplete, navegación, Rename, adaptación/anomalías/metadatos/limitación); tests/walkDetailStore.test.ts (5 casos con fake-indexeddb aislada: get, ausencia, Rename persistido tras reapertura, inválidos y protección/metadatos de sesión); 4 casos de modo saved/fitBounds/pan-zoom en tests/activeWalkMap.test.tsx. tests/navigation.test.tsx se adaptó para cargar un Walk mockeado en detalle en lugar del placeholder, conservando pruebas de rutas. Regresión Home/History/Active Walk/Leaflet/Chart.js aprobada.
+
+Tests PASS: 381 en25 archivos (11.29 s); build PASS:65 módulos/412 ms; lint PASS sin advertencias; TypeScript tsc -b --force PASS; git diff --check PASS. Node24.21.0/npm11.19.0. Pruebas iniciales detectaron fixtures parametrizadas incorrectas y tipos literales de fixtures; corregidos antes de la validación final. Sin dependencias nuevas.
+
+Chrome real headless/CDP con perfil /tmp aislado, IndexedDB con fixtures sintéticas y tiles simulados: A resumen completo/mapa/perfil/pan-zoom PASS; B incomplete sin T26 PASS; C not found y retorno History PASS; D Rename/trim/recarga/History PASS; cero/un punto seguros, GPS watchPosition0 y activeSession sin escrituras. 390×844/1280×800 sin overflow ni errores de consola finales. El harness de navegador necesitó esperar a finalizar navegación/recarga para leer el documento nuevo; no era error de producto. Fixtures eliminadas al terminar. E Delete no aplica, disponible en History. Safari/iPhone/GPS real y caminatas largas no validados.
+
+Comandos: source ~/.nvm/nvm.sh; nvm use; node --version; npm --version; npm test -- --run; npm run build; npm run lint; ./node_modules/.bin/tsc -b --force; git diff --check; git status --short --branch --untracked-files=all. Adicionales Vite dev y Chrome/CDP con puerto local y perfil aislado. README actualizado durante el cierre formal; fuentes intactas, sin T25–T28/export CSV/tracking vivo. T25 no ha comenzado.
+
+## QA y cierre formal de T24
+
+Valerio aprobó T24: PASS — READY TO CLOSE T24; 381 pruebas PASS en25 archivos, build/lint/TypeScript/diff PASS y regresión T23/Home/Active Walk/persistencia/Leaflet/Chart.js aprobada. Sin defectos QA-T24 ni bloqueos. Chrome/CDP con datos aislados confirmó resumen persistido, ruta/fitBounds, anomalía raw preservada y pico3000 excluido del perfil, incomplete y segmentos disponibles separados, not found/History, Rename vacío/error/retry/trim y persistencia tras recarga/History. Pan manual permanece tras Rename. Cero watchPosition/clearWatch y activeSession/raw sin cambios. Cero/un punto/altitud insuficiente y viewports390×844/1280×800 PASS, sin errores inesperados de consola finales. El harness requirió corregir una variable redeclarada; no fue defecto del producto. Fixtures eliminadas. Delete en detalle no aplica: sigue en History. Limitación de metadatos de pausas aceptada en el alcance condicionado a disponibilidad de datos, conservada explícitamente. Safari/iPhone/performance prolongada NOT TESTED. Cierre documental autorizado, sin funcionalidad nueva; T25 no ha comenzado.
+
+Validación final de cierre T24: Node 24.21.0/npm 11.19.0; 381 tests PASS en25 archivos (12.02 s), incluidos detalle, mapa/perfil guardados, not found, incomplete, Rename y regresión History/Delete/Home/Active Walk. Build PASS (65 módulos,428 ms); lint PASS sin advertencias; tsc -b --force PASS; git diff --check PASS. Antes del commit se confirmó T25 sin iniciar: Settings continúa placeholder, fuentes intactas y sin funcionalidad adicional.
+
+## Historial del cierre de T23
+
 T23 — History View.
 
 Estado: T23 CLOSED; cierre formal autorizado tras aprobación de Valerio: PASS — READY TO CLOSE T23. T24 no ha comenzado; T25–T28 fuera del alcance.
